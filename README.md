@@ -28,9 +28,11 @@ npm run build
 - Responsive Discover marketplace with search and category filters
 - Typed mock agents across LP rebalancing, grid trading, yield optimisation, and health-factor monitoring
 - Dynamic agent detail pages with plain-language descriptions, performance snapshots, controls, protocol context, and recent demo activity
-- Two-agent side-by-side comparison with independent selectors
-- Three-step activation preview: review, preference, and confirmation
-- Explicit demo-data and non-investment-advice notices
+- Clear suitability guidance plus a direct compare action that preselects the current agent
+- Two-agent side-by-side comparison with independent selectors and URL-based preselection
+- Three-step activation preview: Review → Set preference → Confirm, followed by an explicit simulated-ready state
+- Compact profile provenance panels covering demo status, upcoming onchain verification, and illustrative freshness
+- Explicit demo-data, risk, no-wallet, no-funds-moved, and non-investment-advice notices
 - Keyboard-friendly interactions and mobile layouts
 
 ## Architecture
@@ -41,14 +43,17 @@ npm run build
 
 The UI reads from a single `Agent` type, keeping it straightforward to replace local records with indexed onchain data later. The activation experience is intentionally stateful only in the browser and sends no transaction.
 
-## Next integrations
+## Next: 8004scan verified data
 
-1. Replace demo identity and activity with verified records from 8004scan.
-2. Add BNB Agent Studio deployment and lifecycle metadata.
-3. Introduce wallet-aware, permission-scoped activation only after a full transaction review experience exists.
-4. Add strategy-specific integrations for Altana, PancakeSwap, and TermiX.
-5. Use OpenAI API features for plain-language explanations and contextual comparisons, with citations back to raw data.
-6. Add data freshness, provenance, indexing health, and contract verification signals before presenting any metric as live.
+The next milestone will replace demo identity, activity, and timestamps with verified 8004scan records while retaining source, network, freshness, and verification context.
+
+## Later integrations
+
+1. Add BNB Agent Studio deployment and lifecycle metadata.
+2. Introduce wallet-aware, permission-scoped activation only after a full transaction review experience exists.
+3. Add strategy-specific integrations for Altana, PancakeSwap, and TermiX.
+4. Use OpenAI API features for plain-language explanations and contextual comparisons, with citations back to raw data.
+5. Add data freshness, provenance, indexing health, and contract verification signals before presenting any metric as live.
 
 ## Current limitations
 
