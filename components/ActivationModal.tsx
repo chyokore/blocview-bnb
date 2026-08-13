@@ -21,7 +21,7 @@ export function ActivationModal({ agent }: { agent: Agent }) {
       <section className="activation-modal" role="dialog" aria-modal="true" aria-labelledby="activation-title">
         <div className="modal-header"><div><span className="eyebrow">Demo activation preview</span><h2 id="activation-title">Activate {agent.name}</h2></div><button onClick={close} aria-label="Close activation"><CloseIcon /></button></div>
         <div className="stepper">
-          {["Review agent", "Set preference", "Confirm"].map((label, i) => <div key={label} className={step >= i + 1 ? "step active" : "step"}><span>{step > i + 1 ? <CheckIcon /> : i + 1}</span><small>{label}</small></div>)}
+          {["Review", "Set preference", "Confirm"].map((label, i) => <div key={label} className={step >= i + 1 ? "step active" : "step"}><span>{step > i + 1 ? <CheckIcon /> : i + 1}</span><small>{label}</small></div>)}
         </div>
         {step === 1 && <div className="modal-content">
           <div className="review-agent"><span className="agent-avatar" style={{ "--agent-accent": agent.accent } as React.CSSProperties}>{agent.monogram}</span><div><strong>{agent.name}</strong><p>{agent.category} · {agent.risk} risk</p></div></div>
@@ -29,8 +29,9 @@ export function ActivationModal({ agent }: { agent: Agent }) {
           <div className="notice"><ShieldIcon /><p><strong>Preview only.</strong> No wallet will connect and no transaction or movement of funds will occur.</p></div>
         </div>}
         {step === 2 && <div className="modal-content"><h3>Choose a preference</h3><p className="muted">This demonstrates how you could tune the agent before activating it.</p><div className="preference-list">{["Conservative", "Balanced", "Responsive"].map((p) => <button key={p} onClick={() => setPreference(p)} className={preference === p ? "selected" : ""}><span>{p}</span><small>{p === "Conservative" ? "Fewer actions, wider safety margins" : p === "Balanced" ? "A practical balance of activity and control" : "Faster response within your limits"}</small><i>{preference === p && <CheckIcon />}</i></button>)}</div></div>}
-        {step === 3 && <div className="modal-content confirm-state"><span className="confirm-icon"><CheckIcon /></span><h3>Ready to preview activation</h3><p>You selected <strong>{preference}</strong> for {agent.name}. Confirming creates a demo state only.</p><div className="notice"><ShieldIcon /><p>Activation is not investment advice. You remain responsible for reviewing risks and making your own decisions.</p></div></div>}
-        <div className="modal-actions">{step > 1 && <button className="secondary-button" onClick={() => setStep(step - 1)}>Back</button>}<button className="primary-button" onClick={() => step < 3 ? setStep(step + 1) : close()}>{step < 3 ? "Continue" : "Confirm demo"} <span>→</span></button></div>
+        {step === 3 && <div className="modal-content confirm-state"><span className="confirm-icon"><CheckIcon /></span><h3>Confirm demo activation</h3><p>You selected <strong>{preference}</strong> for {agent.name}. Confirming creates a demo state only.</p><div className="notice"><ShieldIcon /><p>Activation is not investment advice. You remain responsible for reviewing risks and making your own decisions.</p></div></div>}
+        {step === 4 && <div className="modal-content confirm-state activation-success" role="status"><span className="confirm-icon"><CheckIcon /></span><h3>Demo activation ready</h3><p className="success-message">Demo activation ready — no wallet connected and no funds moved.</p><div className="activation-summary"><span>Agent <strong>{agent.name}</strong></span><span>Preference <strong>{preference}</strong></span></div></div>}
+        <div className="modal-actions">{step > 1 && step < 4 && <button className="secondary-button" onClick={() => setStep(step - 1)}>Back</button>}<button className="primary-button" onClick={() => step < 4 ? setStep(step + 1) : close()}>{step < 3 ? "Continue" : step === 3 ? "Confirm demo" : "Done"} {step < 4 && <span>→</span>}</button></div>
       </section>
     </div>}
   </>;

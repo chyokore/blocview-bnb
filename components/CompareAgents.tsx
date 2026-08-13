@@ -2,12 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { agents } from "@/data/agents";
 import { ArrowIcon, CheckIcon } from "./icons";
 
 export function CompareAgents() {
-  const [left, setLeft] = useState(agents[0].slug);
-  const [right, setRight] = useState(agents[2].slug);
+  const searchParams = useSearchParams();
+  const requestedAgent = searchParams.get("agent");
+  const initialLeft = agents.some((agent) => agent.slug === requestedAgent) ? requestedAgent! : agents[0].slug;
+  const initialRight = agents.find((agent) => agent.slug !== initialLeft)?.slug ?? agents[1].slug;
+  const [left, setLeft] = useState(initialLeft);
+  const [right, setRight] = useState(initialRight);
   const selected = [agents.find((a) => a.slug === left)!, agents.find((a) => a.slug === right)!];
   const rows: Array<[string, (typeof agents)[number] extends infer T ? keyof T : never]> = [["Category", "category"], ["Risk level", "risk"], ["30-day return", "return30d"], ["Fee", "fee"], ["Strategy", "strategy"], ["Protocol", "protocol"], ["Recent activity", "activityCount"], ["Best suited for", "suitability"]];
   return <div className="compare-wrap">

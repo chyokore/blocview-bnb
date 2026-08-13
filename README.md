@@ -13,6 +13,14 @@ npm install
 npm run dev
 ```
 
+Create `.env.local` with the server-side 8004scan credential:
+
+```bash
+SCAN8004_API_KEY=your_8004scan_api_key
+```
+
+The key is sent only from the server in the `X-API-Key` header. `.env.local` is Git-ignored and must never be exposed in browser code or committed.
+
 Open the local URL printed in the terminal.
 
 Useful checks:
@@ -32,6 +40,8 @@ npm run build
 - Two-agent side-by-side comparison with independent selectors and URL-based preselection
 - Three-step activation preview: Review → Set preference → Confirm, followed by an explicit simulated-ready state
 - Compact profile provenance panels covering demo status, upcoming onchain verification, and illustrative freshness
+- Server-only 8004scan identity, capability, and reputation lookup with strict BNB Chain matching and safe demo fallback
+- Internal `/api/8004scan/status` and `/api/8004scan/agents/[slug]` routes; browser code never calls 8004scan directly
 - Explicit demo-data, risk, no-wallet, no-funds-moved, and non-investment-advice notices
 - Keyboard-friendly interactions and mobile layouts
 
@@ -43,9 +53,9 @@ npm run build
 
 The UI reads from a single `Agent` type, keeping it straightforward to replace local records with indexed onchain data later. The activation experience is intentionally stateful only in the browser and sends no transaction.
 
-## Next: 8004scan verified data
+## 8004scan verified data
 
-The next milestone will replace demo identity, activity, and timestamps with verified 8004scan records while retaining source, network, freshness, and verification context.
+When an exact-name BNB Chain record exists, profiles show its registered identity, supported protocols, aggregate reputation, feedback count, registration time, and verification time. Demo strategy, performance, TVL, returns, fees, and activity remain separate and clearly illustrative. If the API, key, or compatible record is unavailable, the existing demo profile remains intact.
 
 ## Later integrations
 
