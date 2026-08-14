@@ -45,6 +45,7 @@ npm run build
 - Three-step activation preview: Review → Set preference → Confirm, followed by an explicit simulated-ready state
 - Compact profile provenance panels covering demo status, upcoming onchain verification, and illustrative freshness
 - Server-only 8004scan identity, capability, and reputation lookup with strict BNB Chain matching and safe demo fallback
+- Agent Readiness Passport on live profiles with explicit evidence coverage and provenance
 - Internal `/api/8004scan/status` and `/api/8004scan/agents/[slug]` routes; browser code never calls 8004scan directly
 - On-demand AI Agent Briefs grounded only in the selected BLOCview profile and available verified 8004scan fields
 - Neutral-language and data-basis safeguards that keep demo metrics distinct from verified identity data
@@ -79,6 +80,14 @@ When an exact-name BNB Chain record exists, profiles show its registered identit
 - Requests use `SCAN8004_API_KEY` only in `lib/8004scan.ts`, which is guarded by `server-only`. Browser components receive normalized records and never receive the credential.
 
 The live list uses the documented `GET /api/v1/public/agents` endpoint with `chainId=56`, `isTestnet=false`, `page`, `limit`, `sortBy=created_at`, and `sortOrder=desc`. Pagination is rendered only when the documented `meta.pagination` fields indicate it. Live detail uses `GET /api/v1/public/agents/{chainId}/{tokenId}`. The existing demo verification path also uses documented semantic search, detail, feedback, and chains endpoints.
+
+### Agent Readiness Passport
+
+Every live detail page includes an Agent Readiness Passport covering registry identity, declared capabilities, returned reputation, activity/validation evidence, and permission/operating-control evidence. Each area is labelled **Available**, **Declared only**, or **Not available**, with a compact evidence-coverage count. This count describes field coverage only; it is not a trust score, safety score, rating, ranking, or recommendation.
+
+The passport uses only fields normalized by the existing server-side 8004scan adapter. Capabilities are shown exactly as returned and remain declarations rather than independently tested functionality. Missing reputation values remain missing rather than being converted to zero. Because the current public detail response used by BLOCview does not return independently verifiable activity, validation, wallet-permission, spend-cap, session-expiry, revocation, or payment-term evidence, those areas are explicitly marked unavailable. Live pages never borrow demo performance, strategy, TVL, trade, activation, or AI Agent Brief data.
+
+Provenance includes the returned registration time when available, the API check timestamp, and a direct 8004scan source-record link constructed from the returned BNB Chain token identifier. BLOCview presents registry evidence for research but does not verify performance, guarantee outcomes, or provide financial advice.
 
 ## Later integrations
 
