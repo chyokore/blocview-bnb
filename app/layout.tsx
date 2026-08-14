@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./brief.css";
 
 export const metadata: Metadata = {
   title: { default: "BLOCview — Understand onchain AI agents", template: "%s · BLOCview" },

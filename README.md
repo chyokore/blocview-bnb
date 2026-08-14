@@ -17,9 +17,12 @@ Create `.env.local` with the server-side 8004scan credential:
 
 ```bash
 SCAN8004_API_KEY=your_8004scan_api_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 The key is sent only from the server in the `X-API-Key` header. `.env.local` is Git-ignored and must never be exposed in browser code or committed.
+
+`OPENAI_API_KEY` is also server-only. The AI Agent Brief endpoint uses the official OpenAI JavaScript SDK and Responses API with `gpt-4o-mini`, a strict JSON schema, a 700-token output cap, no tools or web search, no response persistence in BLOCview, and a 60-second per-agent in-memory cooldown.
 
 Open the local URL printed in the terminal.
 
@@ -42,6 +45,8 @@ npm run build
 - Compact profile provenance panels covering demo status, upcoming onchain verification, and illustrative freshness
 - Server-only 8004scan identity, capability, and reputation lookup with strict BNB Chain matching and safe demo fallback
 - Internal `/api/8004scan/status` and `/api/8004scan/agents/[slug]` routes; browser code never calls 8004scan directly
+- On-demand AI Agent Briefs grounded only in the selected BLOCview profile and available verified 8004scan fields
+- Neutral-language and data-basis safeguards that keep demo metrics distinct from verified identity data
 - Explicit demo-data, risk, no-wallet, no-funds-moved, and non-investment-advice notices
 - Keyboard-friendly interactions and mobile layouts
 
