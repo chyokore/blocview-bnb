@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { AgentCard } from "./AgentCard";
 import { agents, categories } from "@/data/agents";
 import { SearchIcon, ShieldIcon, SlidersIcon } from "./icons";
@@ -17,9 +18,11 @@ export function Discover() {
       <p>Discover, understand, and compare onchain agents—without digging through contracts, dashboards, or jargon.</p>
       <div className="search-box"><SearchIcon /><input value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search agents" placeholder="Search agents, strategies, or protocols..." /><kbd>⌘ K</kbd></div>
       <div className="trust-strip"><span><ShieldIcon /> Clear risk controls</span><span><SlidersIcon /> Side-by-side comparison</span><span><i className="status-dot" /> Demo data, clearly labelled</span></div>
+      <Link href="/find-your-fit" className="hero-fit-cta">Find your fit <span>Answer four questions</span></Link>
+      <div className="discovery-switch" aria-label="Choose a discovery source"><a href="#discover" className="active">Explore BLOCview demo strategies</a><Link href="/live-agents">Browse live BNB agents</Link></div>
     </section>
     <section className="discover-section" id="discover">
-      <div className="section-heading"><div><span className="eyebrow">Agent marketplace</span><h2>Explore live strategies</h2><p>Compare purpose, performance, and risk before you take the next step.</p></div><span className="result-count">{filtered.length} agents</span></div>
+      <div className="section-heading"><div><span className="eyebrow">BLOCview demo marketplace</span><h2>Explore demo strategies</h2><p>Illustrative strategy profiles for comparing purpose, performance, and risk. These are not live ERC-8004 records.</p></div><span className="result-count">{filtered.length} demo agents</span></div>
       <div className="filters" role="group" aria-label="Filter by category">{categories.map((item) => <button key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item}</button>)}</div>
       {filtered.length ? <div className="agent-grid">{filtered.map((agent) => <AgentCard key={agent.slug} agent={agent} />)}</div> : <div className="empty-state"><SearchIcon /><h3>No matching agents</h3><p>Try another search or category.</p></div>}
     </section>

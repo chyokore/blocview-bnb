@@ -9,6 +9,7 @@ export function AgentCard({ agent }: { agent: Agent }) {
         <div className="agent-identity"><span className="agent-avatar" style={{ "--agent-accent": agent.accent } as React.CSSProperties}>{agent.monogram}</span><div><h3>{agent.name}</h3><span>{agent.protocol}</span></div></div>
         <span className="status"><i />{agent.status}</span>
       </div>
+      <span className="source-badge demo">BLOCview Demo</span>
       <p className="card-description">{agent.description}</p>
       <div className="tag-row"><span>{agent.category}</span><span className={`risk-${agent.risk.toLowerCase()}`}>{agent.risk} risk</span></div>
       <div className="metrics-grid">
