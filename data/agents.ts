@@ -20,7 +20,7 @@ export type Agent = {
   longDescription: string;
   category: AgentCategory;
   risk: RiskLevel;
-  status: "Live" | "Monitoring";
+  status: "Demo preview" | "Demo monitoring";
   return30d: number;
   capital: string;
   capitalLabel: string;
@@ -51,7 +51,7 @@ export const agents: Agent[] = [
     longDescription: "Range Pilot watches a PancakeSwap liquidity position and proposes a new price range when the current one becomes inefficient. Think of it as a calm co-pilot for LP management: it monitors continuously, but only acts within the limits you choose.",
     category: "LP Rebalancing",
     risk: "Medium",
-    status: "Live",
+    status: "Demo preview",
     return30d: 4.8,
     capital: "$2.41M",
     capitalLabel: "demo TVL",
@@ -76,7 +76,7 @@ export const agents: Agent[] = [
     longDescription: "Grid Sentinel turns a price band into a series of small, rules-based trades. It is designed for sideways markets and makes the trade-off clear: a strong trend can leave part of the position behind.",
     category: "Grid Trading",
     risk: "High",
-    status: "Live",
+    status: "Demo preview",
     return30d: 6.2,
     capital: "$860K",
     capitalLabel: "demo capital monitored",
@@ -101,7 +101,7 @@ export const agents: Agent[] = [
     longDescription: "Yield Navigator checks supported lending markets and explains where a stablecoin position could earn yield. It weighs headline rate against utilisation, liquidity, and protocol exposure instead of chasing the highest number.",
     category: "Yield Optimisation",
     risk: "Medium",
-    status: "Monitoring",
+    status: "Demo monitoring",
     return30d: 3.6,
     capital: "$4.82M",
     capitalLabel: "demo capital monitored",
@@ -126,7 +126,7 @@ export const agents: Agent[] = [
     longDescription: "Health Guard translates a lending position's health factor into clear, timely alerts. It shows what changed, how close the position is to its chosen safety threshold, and what action a user might review.",
     category: "Health-Factor Monitoring",
     risk: "Low",
-    status: "Live",
+    status: "Demo preview",
     return30d: 0,
     capital: "$7.12M",
     capitalLabel: "demo positions watched",

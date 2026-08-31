@@ -21,7 +21,7 @@ const steps = ["Goal", "Risk comfort", "Priority", "Experience"];
 function priorityFact(agent: Agent, priority: NonNullable<Answers["priority"]>) {
   if (priority === "Clear risk controls") return `${agent.name} lists ${agent.controls.length} demo controls, including “${agent.controls[0]}”.`;
   if (priority === "Yield opportunity") return agent.return30d > 0 ? `${agent.name} includes an illustrative 30-day return field; it is demo data, not evidence of future returns.` : `${agent.name} is monitoring-focused and does not present a positive demo return.`;
-  if (priority === "Automation") return `${agent.name}'s demo purpose describes ${agent.status === "Monitoring" ? "monitoring" : "rules-based strategy support"}.`;
+  if (priority === "Automation") return `${agent.name}'s demo purpose describes ${agent.status === "Demo monitoring" ? "monitoring" : "rules-based strategy support"}.`;
   return `${agent.name} contains ${agent.activityCount} illustrative activity events in its demo profile.`;
 }
 

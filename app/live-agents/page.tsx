@@ -17,12 +17,12 @@ export default async function LiveAgentsPage({ searchParams }: { searchParams: P
   else if (result.status === "malformed") content = <LiveState title="8004scan returned an unexpected response" copy="BLOCview declined to display records that could not be safely validated." />;
   else if (result.agents.length === 0) content = <LiveState title="No live BNB agents returned" copy="8004scan returned an empty BNB Chain page. No demo records are substituted." />;
   else content = <>
-    <div className="live-result-meta"><span>{result.total === undefined ? `${result.agents.length} returned` : `${result.total.toLocaleString()} total`} · Page {result.page}</span><span>Source verification: {new Date(result.verifiedAt).toLocaleString()}</span></div>
+    <div className="live-result-meta"><span>{result.total === undefined ? `${result.agents.length} returned` : `${result.total.toLocaleString()} total`} · Page {result.page}</span><span>Retrieved at: {new Date(result.retrievedAt).toLocaleString()} · {result.retrievalTimestampBasis === "source-provided" ? "source timestamp" : "local fallback"}</span></div>
     <LiveAgentList agents={result.agents} />
     <nav className="pagination" aria-label="Live agent pages">{result.page > 1 && <Link className="secondary-button" href={`/live-agents?page=${result.page - 1}`}>Previous</Link>}{result.hasMore && <Link className="primary-button" href={`/live-agents?page=${result.page + 1}`}>Next page</Link>}</nav>
   </>;
   return <main><Header /><div className="live-shell">
-    <header className="live-heading"><span className="eyebrow">8004scan discovery</span><h1>Live BNB agents</h1><p>Real ERC-8004 identities returned by 8004scan, kept separate from BLOCview&apos;s illustrative strategies.</p><div className="source-badge verified">Verified BNB Chain data</div></header>
+    <header className="live-heading"><span className="eyebrow">8004scan discovery</span><h1>Live BNB agents</h1><p>Real ERC-8004 registry records returned by 8004scan, kept separate from BLOCview&apos;s illustrative strategies.</p><div className="source-badge verified">8004scan registry records</div></header>
     {content}
   </div><Footer /></main>;
 }

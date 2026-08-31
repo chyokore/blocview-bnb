@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Agent } from "@/data/agents";
+import { resolveRetrievalTimestamp } from "@/lib/evidence";
 
 const API_BASE_URL = "https://8004scan.io/api/v1/public";
 export const BNB_CHAIN_ID = 56;
@@ -36,7 +37,8 @@ export type LiveAgent = {
   capabilities: string[];
   reputation?: { score?: number; stars?: number; feedbackCount?: number };
   registeredAt?: string;
-  lastVerifiedAt: string;
+  retrievedAt: string;
+  retrievalTimestampBasis: "source-provided" | "local-fallback";
 };
 
 export type VerifiedAgentData = LiveAgent & {
@@ -47,7 +49,7 @@ export type VerifiedAgentData = LiveAgent & {
 
 export type ScanAvailability = "available" | "unavailable" | "not-configured";
 export type LiveAgentsResult =
-  | { status: "ok"; agents: LiveAgent[]; page: number; limit: number; total?: number; hasMore: boolean; verifiedAt: string }
+  | { status: "ok"; agents: LiveAgent[]; page: number; limit: number; total?: number; hasMore: boolean; retrievedAt: string; retrievalTimestampBasis: "source-provided" | "local-fallback" }
   | { status: "not-configured"; agents: [] }
   | { status: "unavailable"; agents: [] }
   | { status: "malformed"; agents: [] };
@@ -76,7 +78,7 @@ function isFiniteInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
-function mapLiveAgent(record: ScanAgent, verifiedAt: string): LiveAgent | null {
+function mapLiveAgent(record: ScanAgent, retrieval: ReturnType<typeof resolveRetrievalTimestamp>): LiveAgent | null {
   if (record.chain_id !== BNB_CHAIN_ID || !isFiniteInteger(record.token_id)) return null;
   return {
     source: "8004scan",
@@ -93,7 +95,7 @@ function mapLiveAgent(record: ScanAgent, verifiedAt: string): LiveAgent | null {
       feedbackCount: isFiniteInteger(record.total_feedbacks) ? record.total_feedbacks : undefined,
     },
     registeredAt: typeof record.created_at === "string" ? record.created_at : undefined,
-    lastVerifiedAt: verifiedAt,
+    ...retrieval,
   };
 }
 
@@ -112,8 +114,8 @@ export async function listLiveAgents(page = 1, limit = 20): Promise<LiveAgentsRe
   const response = await request<ScanAgent[]>(`/agents?${query}`);
   if (!response) return { status: "unavailable", agents: [] };
   if (!response.success || !Array.isArray(response.data)) return { status: "malformed", agents: [] };
-  const verifiedAt = response.meta?.timestamp ?? new Date().toISOString();
-  const agents = response.data.map((record) => mapLiveAgent(record, verifiedAt)).filter((agent): agent is LiveAgent => Boolean(agent));
+  const retrieval = resolveRetrievalTimestamp(response.meta?.timestamp);
+  const agents = response.data.map((record) => mapLiveAgent(record, retrieval)).filter((agent): agent is LiveAgent => Boolean(agent));
   const pagination = response.meta?.pagination;
   return {
     status: "ok",
@@ -122,7 +124,7 @@ export async function listLiveAgents(page = 1, limit = 20): Promise<LiveAgentsRe
     limit: pagination?.limit ?? safeLimit,
     total: pagination?.total,
     hasMore: pagination?.hasMore === true,
-    verifiedAt,
+    ...retrieval,
   };
 }
 
@@ -130,7 +132,7 @@ export async function getLiveAgent(chainId: number, tokenId: number): Promise<Li
   if (chainId !== BNB_CHAIN_ID || !isFiniteInteger(tokenId)) return null;
   const response = await request<ScanAgent>(`/agents/${chainId}/${tokenId}`);
   if (!response?.success || !response.data) return null;
-  return mapLiveAgent(response.data, response.meta?.timestamp ?? new Date().toISOString());
+  return mapLiveAgent(response.data, resolveRetrievalTimestamp(response.meta?.timestamp));
 }
 
 export async function getScanAvailability(): Promise<ScanAvailability> {
@@ -149,7 +151,7 @@ export async function getVerifiedAgent(agent: Agent): Promise<VerifiedAgentData 
     request<ScanFeedback[]>(`/feedbacks?chainId=${BNB_CHAIN_ID}&tokenId=${match.token_id}&limit=5`),
   ]);
   const record = detail?.data ?? match;
-  const live = mapLiveAgent(record, detail?.meta?.timestamp ?? search?.meta?.timestamp ?? new Date().toISOString());
+  const live = mapLiveAgent(record, resolveRetrievalTimestamp(detail?.meta?.timestamp ?? search?.meta?.timestamp));
   if (!live?.name) return null;
   return {
     ...live,

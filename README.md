@@ -68,14 +68,14 @@ Matching is deterministic and runs entirely in the browser without OpenAI, API k
 
 Only BLOCview demo strategies participate in Fit Finder ranking. Verified live 8004scan records remain separate and are not classified or recommended when their returned capabilities do not clearly support a category. Demo performance and activity remain illustrative. Fit results do not account for a visitor's finances, portfolio, liquidity needs, or capacity for loss and do not guarantee outcomes.
 
-## 8004scan verified data
+## 8004scan registry evidence
 
-When an exact-name BNB Chain record exists, profiles show its registered identity, supported protocols, aggregate reputation, feedback count, registration time, and verification time. Demo strategy, performance, TVL, returns, fees, and activity remain separate and clearly illustrative. If the API, key, or compatible record is unavailable, the existing demo profile remains intact.
+When an exact-name BNB Chain record exists, profiles show its registered identity, declared supported protocols, returned reputation fields, registration time, retrieval time, and timestamp basis. Demo strategy, performance, TVL, returns, fees, and activity remain separate and clearly illustrative. Retrieval freshness is not independent verification. If the API, key, or compatible record is unavailable, the existing demo profile remains intact.
 
 ### Demo Strategies vs Live BNB Agents
 
 - **Demo Strategies** are BLOCview-authored illustrative profiles. Their strategy categories, performance, TVL, fees, activity, AI Agent Brief, and activation preview are visibly labelled as demo data.
-- **Live BNB Agents** at `/live-agents` are separate ERC-8004 identity records returned by the 8004scan Public API for BNB Chain mainnet (chain ID 56). BLOCview displays only returned identity, description, supported protocol/capability, reputation, feedback-count, registration, and API-verification fields.
+- **Live BNB Agents** at `/live-agents` are separate ERC-8004 registry records returned by the 8004scan Public API for BNB Chain mainnet (chain ID 56). BLOCview displays only normalized registry identity, description, declared protocol/capability, returned reputation, feedback-count, registration, retrieval provenance, and explicit evidence gaps.
 - Live agents are never silently classified into BLOCview strategy categories and do not receive demo metrics, AI Agent Briefs, or activation controls. A returned protocol/capability is shown verbatim; the BLOCview classification remains **Unclassified live agent**.
 - Requests use `SCAN8004_API_KEY` only in `lib/8004scan.ts`, which is guarded by `server-only`. Browser components receive normalized records and never receive the credential.
 
@@ -87,7 +87,7 @@ Every live detail page includes an Agent Readiness Passport covering registry id
 
 The passport uses only fields normalized by the existing server-side 8004scan adapter. Capabilities are shown exactly as returned and remain declarations rather than independently tested functionality. Missing reputation values remain missing rather than being converted to zero. Because the current public detail response used by BLOCview does not return independently verifiable activity, validation, wallet-permission, spend-cap, session-expiry, revocation, or payment-term evidence, those areas are explicitly marked unavailable. Live pages never borrow demo performance, strategy, TVL, trade, activation, or AI Agent Brief data.
 
-Provenance includes the returned registration time when available, the API check timestamp, and a direct 8004scan source-record link constructed from the returned BNB Chain token identifier. BLOCview presents registry evidence for research but does not verify performance, guarantee outcomes, or provide financial advice.
+Live Proof provenance includes the returned registration time when available, retrieval time with a source-provided or local-fallback label, conservative freshness classification, and a direct 8004scan source-record link constructed from the returned BNB Chain token identifier. BLOCview presents registry evidence for research but does not verify activity, permissions, validation, performance, or safety.
 
 ## Later integrations
 
