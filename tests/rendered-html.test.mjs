@@ -243,6 +243,14 @@ test("invalid, duplicate, over-limit, and demo IDs render safely", async () => {
   assert.equal(normalized.length, 4);
 });
 
+test("legacy live comparison preserves valid selected identities", async () => {
+  const route = await readFile(new URL("../app/live-agents/compare/page.tsx", import.meta.url), "utf8");
+  assert.match(route, /useSearchParams/);
+  assert.match(route, /\^56:\(\\d\+\)\$/);
+  assert.match(route, /`\/compare\?agents=\$\{ids\}`/);
+  assert.match(route, /router\.replace\(target\)/);
+});
+
 test("rendered pages preserve provenance and no-action safety messaging", async () => {
   const [homeResponse, liveResponse] = await Promise.all([render(), render("/live-agents")]);
   const [home, live] = await Promise.all([homeResponse.text(), liveResponse.text()]);
