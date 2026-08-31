@@ -13,6 +13,8 @@ import {
 import { composeFlagshipProof, resolveRangePilotWatchRegistryMapping } from "../lib/flagship-proof.ts";
 import { listRangePilotLiveAgents, RANGE_PILOT_REGISTRY } from "../lib/range-pilot-watch-agents.ts";
 import { ASSESSMENT_ENDPOINTS, validateAssessmentRequest } from "../lib/range-pilot-assessments.ts";
+import { composeGridBandReceipt, crossCheckGridBand, placeTick } from "../lib/gridband-evidence.ts";
+import { decodeSignedInt24Word, decodeSlot0, PANCAKESWAP_V3_POOL_ALLOWLIST, readPancakeSwapV3PoolEvidence } from "../lib/pancakeswap-v3.ts";
 
 function liveAgent(overrides = {}) {
   return {
@@ -56,6 +58,43 @@ function serviceResponse(overrides = {}) {
 
 function jsonFetch(body, status = 200) {
   return async () => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+}
+
+const rpcWord = (value) => BigInt.asUintN(256, BigInt(value)).toString(16).padStart(64, "0");
+const rpcAddress = (value) => `0x${"0".repeat(24)}${value.slice(2).toLowerCase()}`;
+const rpcUint = (value) => `0x${rpcWord(value)}`;
+const rpcSlot0 = (sqrtPriceX96, tick) => `0x${rpcWord(sqrtPriceX96)}${rpcWord(tick)}`;
+
+function verifiedRpcFetch(overrides = {}) {
+  let call = 0;
+  const values = {
+    chainId: "0x38",
+    blockNumber: "0x071a1200",
+    code: "0x60006000",
+    timestamp: "0x68b46b20",
+    factory: rpcAddress(PANCAKESWAP_V3_POOL_ALLOWLIST.factory),
+    token0: rpcAddress(PANCAKESWAP_V3_POOL_ALLOWLIST.token0),
+    token1: rpcAddress(PANCAKESWAP_V3_POOL_ALLOWLIST.token1),
+    fee: rpcUint(500),
+    tickSpacing: rpcUint(10),
+    slot0: rpcSlot0(123456789012345678901234567890n, -65411),
+    liquidity: rpcUint(1267650600228229401496703205376n),
+    ...overrides,
+  };
+  return async (_url, init) => {
+    call += 1;
+    const requests = JSON.parse(String(init.body));
+    if (call === 1) return Response.json(requests.map((request) => ({ jsonrpc: "2.0", id: request.id, result: request.id === 1 ? values.chainId : values.blockNumber })));
+    const results = new Map([
+      [10, values.code], [11, { number: values.blockNumber, timestamp: values.timestamp }],
+      [20, values.factory], [21, values.token0], [22, values.token1], [23, values.fee], [24, values.tickSpacing], [25, values.slot0], [26, values.liquidity],
+    ]);
+    return Response.json(requests.map((request) => ({ jsonrpc: "2.0", id: request.id, result: results.get(request.id) })));
+  };
+}
+
+function externalGridObservation({ currentTick = -65411, blockNumber = 119149056, pool = PANCAKESWAP_V3_POOL_ALLOWLIST.address, observedAt = "2026-08-31T12:00:00.000Z" } = {}) {
+  return { result: { assessment: { currentTick }, evidence: { block: { number: blockNumber }, contractAddresses: { pool }, observedAt } } };
 }
 
 async function render(pathname = "/") {
@@ -264,7 +303,7 @@ test("pending-agent activation remains an external read-only no-transaction hand
   assert.doesNotMatch(`${route}\n${form}\n${proxy}`, /sendTransaction|eth_sendTransaction|walletConnect|privateKey|signer\./i);
   assert.doesNotMatch(route, /href=\{agent\.assessmentUrl\}/);
   assert.match(proxy, /method:\s*"POST"/);
-  assert.match(proxy, /ASSESSMENT_ENDPOINTS\[tokenId\]/);
+  assert.match(proxy, /ASSESSMENT_ENDPOINTS\[(?:tokenId|assessmentTokenId)\]/);
 });
 
 test("uses exact per-agent health and assessment endpoints", () => {
@@ -426,4 +465,118 @@ test("pending agents render separately with truthful indexing and activation bou
   assert.match(detail, /No wallet connection, signing, transaction, execution, or payment/i);
   assert.match(detail, /not investment advice/i);
   assert.doesNotMatch(detail, /Connect wallet|Sign transaction|Execute strategy|Send transaction/i);
+});
+
+test("reads and verifies the allowlisted PancakeSwap V3 pool at one pinned block", async () => {
+  const result = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch(), now: () => new Date("2026-08-31T12:01:00.000Z") });
+  assert.equal(result.status, "verified");
+  assert.equal(result.evidence.verification.status, "verified");
+  assert.equal(result.evidence.verification.checks.factory.matches, true);
+  assert.equal(result.evidence.verification.checks.token0.matches, true);
+  assert.equal(result.evidence.verification.checks.token1.matches, true);
+  assert.equal(result.evidence.verification.checks.fee.matches, true);
+  assert.equal(result.evidence.verification.checks.tickSpacing.matches, true);
+  assert.equal(result.evidence.pool.factory.toLowerCase(), PANCAKESWAP_V3_POOL_ALLOWLIST.factory.toLowerCase());
+  assert.equal(result.evidence.pool.token0.toLowerCase(), PANCAKESWAP_V3_POOL_ALLOWLIST.token0.toLowerCase());
+  assert.equal(result.evidence.pool.token1.toLowerCase(), PANCAKESWAP_V3_POOL_ALLOWLIST.token1.toLowerCase());
+  assert.equal(result.evidence.pool.fee, 500);
+  assert.equal(result.evidence.pool.tickSpacing, 10);
+  assert.equal(result.evidence.state.tick, -65411);
+  assert.equal(result.evidence.state.sqrtPriceX96, "123456789012345678901234567890");
+  assert.equal(result.evidence.state.liquidity, "1267650600228229401496703205376");
+  assert.equal(result.evidence.block.number, 119149056);
+  assert.equal(result.evidence.block.timestamp, "2025-08-31T15:32:48.000Z");
+});
+
+test("decodes signed negative slot0 ticks and preserves large uint values", () => {
+  const encoded = rpcSlot0(123456789012345678901234567890n, -65411);
+  assert.equal(decodeSignedInt24Word(`0x${rpcWord(-65411)}`), -65411);
+  assert.deepEqual(decodeSlot0(encoded), { sqrtPriceX96: "123456789012345678901234567890", tick: -65411 });
+});
+
+test("rejects pool identity mismatch instead of producing verified evidence", async () => {
+  const result = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch({ factory: rpcAddress(`0x${"1".repeat(40)}`) }) });
+  assert.equal(result.status, "mismatch");
+  assert.equal(result.evidence.verification.status, "mismatch");
+  assert.equal(result.evidence.verification.checks.factory.matches, false);
+});
+
+test("sanitizes malformed RPC responses and RPC failures", async () => {
+  const malformed = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch({ slot0: "0x01" }) });
+  const unavailable = await readPancakeSwapV3PoolEvidence({ fetchImpl: async () => new Response("unavailable", { status: 503 }) });
+  assert.deepEqual([malformed.status, unavailable.status], ["malformed", "unavailable"]);
+  assert.match(malformed.reason, /malformed pool evidence|slot0 response was malformed/i);
+  assert.match(unavailable.reason, /temporarily unavailable/i);
+  assert.doesNotMatch(`${malformed.reason} ${unavailable.reason}`, /stack|rpc url|exception|publicnode/i);
+});
+
+test("requires a valid pinned block timestamp", async () => {
+  const result = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch({ timestamp: "not-hex" }) });
+  assert.equal(result.status, "malformed");
+});
+
+test("surfaces missing pool code and malformed critical state explicitly", async () => {
+  const noCode = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch({ code: "0x" }) });
+  const badSlot0 = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch({ slot0: "0x01" }) });
+  const badLiquidity = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch({ liquidity: "0x01" }) });
+  assert.equal(noCode.status, "unavailable");
+  assert.match(noCode.reason, /bytecode was unavailable/i);
+  assert.equal(badSlot0.status, "malformed");
+  assert.match(badSlot0.reason, /slot0 response/i);
+  assert.equal(badLiquidity.status, "malformed");
+  assert.match(badLiquidity.reason, /liquidity response/i);
+});
+
+test("derives GridBand placement from the verified first-party tick", async () => {
+  const firstParty = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch() });
+  const receipt = composeGridBandReceipt({ poolId: "WBNB-USDT-500", boundaries: [-100000, 0, 100000] }, firstParty, externalGridObservation());
+  assert.equal(receipt.assessment.currentTick, -65411);
+  assert.deepEqual(receipt.assessment.placement, { kind: "within_declared_grid", bandIndex: 0 });
+  assert.deepEqual(placeTick([-100000, 0, 100000], -100001), { kind: "below_declared_grid" });
+  assert.deepEqual(placeTick([-100000, 0, 100000], 100000), { kind: "above_declared_grid" });
+  assert.equal(receipt.assessment.boundariesBasis, "caller-supplied");
+});
+
+test("cross-checks RangePilotWatch conservatively across different blocks", async () => {
+  const firstParty = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch() });
+  const evidence = firstParty.evidence;
+  assert.equal(crossCheckGridBand(evidence, externalGridObservation()).status, "consistent");
+  assert.equal(crossCheckGridBand(evidence, externalGridObservation({ blockNumber: evidence.block.number, currentTick: evidence.state.tick + 1 })).status, "divergent");
+  assert.equal(crossCheckGridBand(evidence, externalGridObservation({ blockNumber: evidence.block.number + 2, currentTick: evidence.state.tick + 101 })).status, "divergent");
+  assert.equal(crossCheckGridBand(evidence, null).status, "unavailable");
+});
+
+test("first-party GridBand evidence succeeds when the external service is unavailable", async () => {
+  const firstParty = await readPancakeSwapV3PoolEvidence({ fetchImpl: verifiedRpcFetch() });
+  const receipt = composeGridBandReceipt({ poolId: "WBNB-USDT-500", boundaries: [-100000, 0, 100000] }, firstParty, null);
+  assert.equal(receipt.status, "completed");
+  assert.equal(receipt.pancakeSwap.verification.status, "verified");
+  assert.equal(receipt.externalCrossCheck.status, "unavailable");
+});
+
+test("first-party PancakeSwap reader remains server-only and strictly allowlisted", async () => {
+  const [reader, route, component, packageJson] = await Promise.all([
+    readFile(new URL("../lib/pancakeswap-v3.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/range-pilot-watch/agents/[tokenId]/assess/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../components/ReadOnlyAssessment.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../package.json", import.meta.url), "utf8"),
+  ]);
+  assert.match(reader, /typeof window !== "undefined"[\s\S]*server-only/);
+  assert.match(reader, /eth_chainId|eth_blockNumber|eth_getCode|eth_getBlockByNumber|eth_call/);
+  for (const selector of ["0xc45a0155", "0x0dfe1681", "0xd21220a7", "0xddca3f43", "0xd0c93a7c", "0x3850c7bd", "0x1a686502"]) assert.match(reader, new RegExp(selector));
+  assert.match(reader, /0x36696169C63e42cd08ce11f5deeBbCeBae652050/);
+  assert.doesNotMatch(`${reader}\n${route}`, /eth_sendTransaction|sendTransaction|writeContract|privateKey|walletConnect|approve\(|swap\(|mint\(|burn\(|collect\(/i);
+  assert.doesNotMatch(component, /rpcUrl|contractAddress|calldata|functionSelector/i);
+  assert.doesNotMatch(packageJson, /ethers|viem|web3|pancakeswap-sdk/i);
+  assert.match(route, /readPancakeSwapV3PoolEvidence/);
+});
+
+test("GridBand evidence never falls back to demo data", async () => {
+  const [route, model] = await Promise.all([
+    readFile(new URL("../app/api/range-pilot-watch/agents/[tokenId]/assess/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/gridband-evidence.ts", import.meta.url), "utf8"),
+  ]);
+  assert.doesNotMatch(`${route}\n${model}`, /from ["']@\/data\/agents|Range Pilot|Grid Sentinel|demo fallback/i);
+  assert.match(route, /verification-failed/);
+  assert.match(route, /evidence-unavailable/);
 });

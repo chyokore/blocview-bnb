@@ -43,6 +43,14 @@ Each profile links to real documentation and its agent-specific health endpoint.
 
 The server rejects unknown fields and does not accept caller-controlled URLs, RPC endpoints, chains, or contracts. The response is displayed as a read-only offchain receipt. It is not continuous monitoring, a safety proof, or investment advice.
 
+### First-party PancakeSwap V3 evidence
+
+For GridBand Observer, BLOCview now performs its own server-side, read-only verification of the single allowlisted BSC mainnet PancakeSwap V3 WBNB/USDT 0.05% pool. At one pinned BNB Chain block it reads the pool bytecode and block timestamp plus `factory()`, `token0()`, `token1()`, `fee()`, `tickSpacing()`, `slot0()`, and `liquidity()`.
+
+The returned identity fields are compared with BLOCview's internal allowlist before the observation can be labelled verified. A mismatch, malformed response, missing contract, or unavailable critical getter produces an explicit failure rather than normal evidence or demo substitution. Integer pool state is retained as exact decimal strings where JavaScript numbers would be unsafe.
+
+GridBand compares the verified current pool tick with caller-supplied grid boundaries. It does not inspect an LP NFT, infer historical crossings, recommend trades or ranges, or modify liquidity. RangePilotWatch remains a separately timed secondary cross-check. RangeRebalance Lens is the distinct LP-position pathway and remains externally implemented in this milestone.
+
 ## Evidence and comparison model
 
 BLOCview preserves source, network, registry, registration-document, and retrieval context. Comparison explains why records differ using only available evidence. Missing reputation, activity, validation, permissions, or operational-verification evidence is shown as unavailable rather than inferred, scored as zero, or borrowed from demo profiles.
@@ -56,6 +64,8 @@ Demo strategies and real live agents remain separate. Demo metrics, performance,
 - `components/ReadOnlyAssessment.tsx` — bounded per-agent assessment forms and receipts.
 - `lib/range-pilot-watch-agents.ts` — typed source of truth for the four registered identities.
 - `lib/range-pilot-assessments.ts` — fixed endpoints and strict request validation.
+- `lib/pancakeswap-v3.ts` — server-only pinned-block reader and allowlist verification for the fixed PancakeSwap V3 pool.
+- `lib/gridband-evidence.ts` — first-party GridBand placement receipt and deterministic external cross-check.
 - `lib/8004scan.ts` — server-only adapter that preserves existing indexed records.
 - `data/agents.ts` — separate illustrative demo records.
 
