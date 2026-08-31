@@ -16,7 +16,7 @@ function reputation(result: LiveComparisonResult, index: number) {
 export function LiveAgentComparison({ result, requirementText, leftKey, rightKey }: { result: LiveComparisonResult; requirementText: string; leftKey: string; rightKey: string }) {
   const recommended = result.recommendedAgentId ? result.records.find((record) => record.agent.agentId === result.recommendedAgentId) : undefined;
   return <div className="live-compare">
-    <header className="live-compare-heading"><span className="eyebrow">Live registry comparison</span><h1>Compare evidence,<br /><span>not promises.</span></h1><p>Two 8004scan registry records, evaluated only against the facts the source returned and the requirements you state.</p></header>
+    <header className="live-compare-heading"><span className="eyebrow">Live registration comparison</span><h1>Compare evidence,<br /><span>not promises.</span></h1><p>Two ERC-8004 records, evaluated only against their cited source evidence and the requirements you state.</p></header>
     <div className="live-compare-separation"><span>LIVE RECORDS ONLY</span>Demo strategies and illustrative metrics are excluded from this comparison.</div>
     <form className="requirement-form" action="/live-agents/compare" method="get">
       <input type="hidden" name="left" value={leftKey} /><input type="hidden" name="right" value={rightKey} />
@@ -32,7 +32,7 @@ export function LiveAgentComparison({ result, requirementText, leftKey, rightKey
     </section>
 
     <section className="live-compare-table" aria-label="Live registry record comparison">
-      <div className="live-compare-row live-compare-records"><div>Registry record</div>{result.records.map((record) => <article key={record.agent.agentId}><span className="source-badge verified">8004scan registry record</span><h2>{record.agent.name ?? `ERC-8004 #${record.agent.tokenId}`}</h2><p>{record.agent.network} · Token #{record.agent.tokenId}</p><Link href={record.evidence.source.url} target="_blank" rel="noreferrer">Open source record <ArrowIcon /></Link></article>)}</div>
+      <div className="live-compare-row live-compare-records"><div>Registry record</div>{result.records.map((record) => <article key={record.agent.agentId}><span className={`source-badge ${record.agent.source === "8004scan" ? "verified" : "pending"}`}>{record.agent.source === "8004scan" ? "8004scan registry record" : "8004scan: indexing pending"}</span><h2>{record.agent.name ?? `ERC-8004 #${record.agent.tokenId}`}</h2><p>{record.agent.network} · Token #{record.agent.tokenId}</p><Link href={record.evidence.source.url} target="_blank" rel="noreferrer">Open source evidence <ArrowIcon /></Link></article>)}</div>
       <CompareRow label="Declared capabilities" values={result.records.map((record) => record.evidence.declaredCapabilities.length ? record.evidence.declaredCapabilities.join(" · ") : "Not available from this record")} />
       <CompareRow label="Capability match" values={result.records.map((record) => `${record.matchedRequirements.length} of ${result.requirements.length} stated requirements`)} />
       <CompareRow label="Evidence coverage" values={result.records.map((record) => `${record.evidence.coverage.available} of ${record.evidence.coverage.total} areas`)} />

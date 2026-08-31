@@ -27,7 +27,7 @@ type ScanAgent = {
 type ScanFeedback = { id?: string; score?: number; comment?: string; created_at?: string };
 
 export type LiveAgent = {
-  source: "8004scan";
+  source: "8004scan" | "range-pilot-watch";
   chainId: 56;
   network: "BNB Chain";
   tokenId: number;
@@ -39,6 +39,13 @@ export type LiveAgent = {
   registeredAt?: string;
   retrievedAt: string;
   retrievalTimestampBasis: "source-provided" | "local-fallback";
+  category?: "Rebalancing" | "Grid Trading" | "Yield Optimisation" | "Health Factor Monitoring";
+  registryAddress?: string;
+  registrationUrl?: string;
+  documentationUrl?: string;
+  healthUrl?: string;
+  assessmentUrl?: string;
+  indexingStatus?: "indexing pending";
 };
 
 export type VerifiedAgentData = LiveAgent & {

@@ -11,6 +11,7 @@ import {
   validateRangePilotWatchResponse,
 } from "../lib/range-pilot-watch.ts";
 import { composeFlagshipProof, resolveRangePilotWatchRegistryMapping } from "../lib/flagship-proof.ts";
+import { listRangePilotLiveAgents, RANGE_PILOT_REGISTRY } from "../lib/range-pilot-watch-agents.ts";
 
 function liveAgent(overrides = {}) {
   return {
@@ -221,6 +222,44 @@ test("rendered pages preserve provenance and no-action safety messaging", async 
   assert.match(live, /Demo strategies remain available and clearly labelled|No demo records are shown in its place/i);
 });
 
+test("surfaces exactly four RangePilotWatch categories with indexing pending", async () => {
+  const agents = listRangePilotLiveAgents(new Date("2026-08-31T10:00:00.000Z"));
+  assert.equal(agents.length, 4);
+  assert.deepEqual(agents.map((agent) => agent.tokenId), [321941, 321995, 322046, 322090]);
+  assert.deepEqual(new Set(agents.map((agent) => agent.category)), new Set(["Rebalancing", "Grid Trading", "Yield Optimisation", "Health Factor Monitoring"]));
+  for (const agent of agents) {
+    assert.equal(agent.indexingStatus, "indexing pending");
+    assert.equal(agent.registry, RANGE_PILOT_REGISTRY);
+    assert.match(agent.registrationUrl, /\/erc8004\/.+\.json$/);
+    assert.match(agent.documentationUrl, /\/docs\/agents\/.+\.html$/);
+    assert.match(agent.healthUrl, /\/health$/);
+    assert.match(agent.assessmentUrl, /\/agents\/.+\/assess$/);
+    assert.equal(agent.assessmentMode, "external-read-only-handoff");
+  }
+  const response = await render("/live-agents");
+  const html = await response.text();
+  assert.match(html, /RangePilotWatch agents/);
+  assert.match(html, /8004scan status:[\s\S]*indexing pending/i);
+  assert.match(html, /Not indexed or rated by 8004scan/i);
+  for (const agent of agents) assert.match(html, new RegExp(agent.name));
+});
+
+test("pending-agent activation remains an external read-only no-transaction handoff", async () => {
+  const [response, route] = await Promise.all([
+    render("/live-agents/56/321941"),
+    readFile(new URL("../app/live-agents/[chainId]/[tokenId]/page.tsx", import.meta.url), "utf8"),
+  ]);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /Reviewed external handoff/i);
+  assert.match(html, /Documentation/);
+  assert.match(html, /Service health/);
+  assert.match(html, /read-only assessment/i);
+  assert.match(html, /No wallet connection, signing, transaction, execution, or payment occurs/i);
+  assert.match(html, /not investment advice/i);
+  assert.doesNotMatch(route, /sendTransaction|eth_sendTransaction|walletConnect|privateKey|signer\./i);
+});
+
 test("accepts a valid available flagship response and composes chain-observed evidence", async () => {
   const result = await fetchRangePilotWatchProof(FLAGSHIP_PROOF_REQUEST, {
     fetchImpl: jsonFetch(serviceResponse()),
@@ -336,4 +375,28 @@ test("flagship UI is standalone, has no demo fallback, and introduces no action 
   assert.doesNotMatch(source, /connect wallet|sign transaction|activate agent|sendTransaction|eth_send|private key/i);
   assert.doesNotMatch(source, /guaranteed profit|safe agent|verified performance|best performing/i);
   assert.doesNotMatch(comparison, /Range Pilot Watch|flagship|live proof/i);
+});
+
+test("pending first-party source contains exactly the four verified identities and categories", () => {
+  const agents = listRangePilotLiveAgents(new Date("2026-08-31T12:00:00.000Z"));
+  assert.deepEqual(agents.map((agent) => agent.tokenId), [321941, 321995, 322046, 322090]);
+  assert.deepEqual(agents.map((agent) => agent.category), ["Rebalancing", "Grid Trading", "Yield Optimisation", "Health Factor Monitoring"]);
+  assert.ok(agents.every((agent) => agent.registry === RANGE_PILOT_REGISTRY));
+  assert.ok(agents.every((agent) => agent.indexingStatus === "indexing pending"));
+  assert.ok(agents.every((agent) => agent.documentationUrl && agent.healthUrl.endsWith("/health") && agent.assessmentUrl.endsWith("/assess")));
+});
+
+test("pending agents render separately with truthful indexing and activation boundaries", async () => {
+  const [listResponse, detailResponse] = await Promise.all([render("/live-agents"), render("/live-agents/56/321941")]);
+  const [list, detail] = await Promise.all([listResponse.text(), detailResponse.text()]);
+  for (const name of ["RangeRebalance Lens", "GridBand Observer", "Venus Yield Lens", "Venus Borrow Buffer Watch"]) assert.match(list, new RegExp(name));
+  assert.match(list, /8004scan status:[\s\S]*indexing pending/i);
+  assert.match(list, /not indexed or rated by 8004scan/i);
+  assert.match(detail, /Public ERC-8004 registration JSON/i);
+  assert.match(detail, /Documentation/);
+  assert.match(detail, /Service health/);
+  assert.match(detail, /Open read-only assessment/);
+  assert.match(detail, /No wallet connection, signing, transaction, execution, or payment/i);
+  assert.match(detail, /not investment advice/i);
+  assert.doesNotMatch(detail, /Connect wallet|Sign transaction|Execute strategy|Send transaction/i);
 });

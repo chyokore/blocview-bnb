@@ -13,7 +13,7 @@ export type EvidenceArea = {
 
 export type EvidenceRecord = {
   source: {
-    name: "8004scan";
+    name: "8004scan" | "RangePilotWatch public registration";
     identifier: string;
     url: string;
   };
@@ -60,26 +60,33 @@ export function classifyFreshness(retrievedAt: string, now = new Date()): Pick<E
 }
 
 export function deriveEvidenceRecord(agent: LiveAgent, now = new Date()): EvidenceRecord {
+  const isPending = agent.source === "range-pilot-watch";
   const hasReputation = agent.reputation?.score !== undefined || agent.reputation?.stars !== undefined || agent.reputation?.feedbackCount !== undefined;
   const areas: EvidenceArea[] = [
-    { key: "identity", label: "Registry identity", state: "Available", basis: "Registry record", reason: "Chain ID, token ID, and agent ID were returned or normalized from the registry response." },
+    { key: "identity", label: "Registry identity", state: "Available", basis: "Registry record", reason: isPending ? "The public registration JSON declares this token ID and BSC ERC-8004 registry identity; 8004scan indexing is pending." : "Chain ID, token ID, and agent ID were returned or normalized from the 8004scan response." },
     { key: "capabilities", label: "Capabilities", state: agent.capabilities.length ? "Declared only" : "Not available", basis: agent.capabilities.length ? "Declared by agent" : "Not available from this record", reason: agent.capabilities.length ? "Capability labels are declarations in the registry record and have not been tested by BLOCview." : "No capability labels were returned in this record." },
-    { key: "reputation", label: "Reputation", state: hasReputation ? "Available" : "Not available", basis: hasReputation ? "Returned by source" : "Not available from this record", reason: hasReputation ? "At least one reputation field was returned by 8004scan; BLOCview has not independently audited its basis." : "No score, stars, or feedback count was returned." },
-    { key: "activity", label: "Activity / validation", state: "Not available", basis: "Not available from this record", reason: "This normalized registry record contains no activity or validation evidence." },
+    { key: "reputation", label: "Reputation", state: hasReputation ? "Available" : "Not available", basis: hasReputation ? "Returned by source" : "Not available from this record", reason: hasReputation ? "At least one reputation field was returned by 8004scan; BLOCview has not independently audited its basis." : isPending ? "No reputation evidence is available while 8004scan indexing is pending." : "No score, stars, or feedback count was returned." },
+    { key: "activity", label: "Activity / validation", state: "Not available", basis: "Not available from this record", reason: isPending ? "The registration document supplies no reputation, activity, or independent validation evidence; 8004scan indexing is pending." : "This normalized registry record contains no activity or validation evidence." },
     { key: "permissions", label: "Permissions / controls", state: "Not available", basis: "Not available from this record", reason: "This normalized registry record contains no wallet permissions, spend caps, session expiry, revocation controls, or payment terms." },
   ];
   const freshness = classifyFreshness(agent.retrievedAt, now);
   return {
-    source: { name: "8004scan", identifier: `8004scan:bsc:${agent.tokenId}`, url: `https://8004scan.io/agents/bsc/${agent.tokenId}` },
-    identity: { network: agent.network, chainId: agent.chainId, tokenId: agent.tokenId, agentId: agent.agentId },
+    source: isPending
+      ? { name: "RangePilotWatch public registration", identifier: `${RANGE_PILOT_WATCH_REGISTRY_ID(agent.registryAddress)}:${agent.tokenId}`, url: agent.registrationUrl! }
+      : { name: "8004scan", identifier: `8004scan:bsc:${agent.tokenId}`, url: `https://8004scan.io/agents/bsc/${agent.tokenId}` },
+    identity: { network: agent.network, chainId: agent.chainId, tokenId: agent.tokenId, agentId: agent.agentId, ...(agent.registryAddress ? { contractAddress: agent.registryAddress } : {}) },
     retrieval: { retrievedAt: agent.retrievedAt, timestampBasis: agent.retrievalTimestampBasis, ...freshness },
     declaredCapabilities: [...agent.capabilities],
     reputation: hasReputation ? { ...agent.reputation, basis: "Returned by source" } : undefined,
     areas,
     coverage: { available: areas.filter((area) => area.state !== "Not available").length, total: areas.length },
     missingEvidence: [
-      "Contract address is not available from this normalized record.",
+      ...(agent.registryAddress ? [] : ["Contract address is not available from this normalized record."]),
       ...areas.filter((area) => area.state === "Not available").map((area) => area.reason),
     ],
   };
+}
+
+function RANGE_PILOT_WATCH_REGISTRY_ID(address: string | undefined) {
+  return `eip155:56:${address ?? "registry-address-unavailable"}`;
 }

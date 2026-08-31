@@ -21,7 +21,8 @@ export type FlagshipProof = {
 
 // Normalized live records do not retain service URLs or owner-controlled linkage.
 // An exact name alone is not sufficient to claim an ERC-8004 association.
-export function resolveRangePilotWatchRegistryMapping(_agents: LiveAgent[]): null {
+export function resolveRangePilotWatchRegistryMapping(agents: LiveAgent[]): null {
+  void agents;
   return null;
 }
 
