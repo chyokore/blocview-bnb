@@ -31,7 +31,7 @@ function record(tokenId: number, name: string, category: RangePilotCategory, slu
     category,
     registrationUrl: `${origin}/erc8004/${slug}.json`,
     documentationUrl: `${origin}/docs/agents/${slug}.html`,
-    healthUrl: `${origin}/health`,
+    healthUrl: `${origin}/agents/${slug}/health`,
     assessmentUrl: `${origin}/agents/${slug}/assess`,
     assessmentMode: "external-read-only-handoff",
     indexingStatus: "indexing pending",

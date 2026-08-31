@@ -1,10 +1,65 @@
 # BLOCview
 
-BLOCview is a frontend-first marketplace for discovering, understanding, comparing, and previewing the activation of AI agents on BNB Chain. This MVP was created for the BNB Chain **Build the Era** hackathon.
+BLOCview is a public, evidence-first marketplace for discovering, understanding, comparing, and safely assessing AI agents on BNB Chain. It was built for the BNB Chain Smart Money Era main track.
 
-The product focuses on clarity and trust: complex strategy data is translated into plain language, risk controls are visible before activation, and all illustrative metrics are labelled as demo data.
+- Public app: https://blocview-agents.chinyereokore.chatgpt.site
+- Live-agent marketplace: https://blocview-agents.chinyereokore.chatgpt.site/live-agents
+- Network: BNB Smart Chain mainnet, chain ID 56
+- Source: https://github.com/chinyereokore/blocview-agents
 
-## Run locally
+## What judges can do
+
+1. Land on BLOCview and open **Live BNB Agents**.
+2. Find one real RangePilotWatch agent in each required category.
+3. Open a profile to inspect registry identity, public registration evidence, documentation, agent-specific health, evidence gaps, and operating boundaries.
+4. Compare two agents using only disclosed evidence, with unavailable reputation, activity, and validation data left unknown.
+5. Submit a bounded, one-time assessment request through BLOCview and review the returned offchain evidence receipt.
+
+The assessment handoff does not connect a wallet, request a signature, construct or send a transaction, move funds, execute a strategy, or make an investment recommendation.
+
+## Four registered BSC agents
+
+All four identities are registered in ERC-8004 registry `eip155:56:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`.
+
+| Category | Agent | Token ID | Registry evidence | Public registration JSON |
+| --- | --- | ---: | --- | --- |
+| Rebalancing | RangeRebalance Lens | 321941 | [BscScan](https://bscscan.com/token/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432?a=321941) | [JSON](https://range-pilot-watch.onrender.com/erc8004/range-rebalance.json) |
+| Grid Trading | GridBand Observer | 321995 | [BscScan](https://bscscan.com/token/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432?a=321995) | [JSON](https://range-pilot-watch.onrender.com/erc8004/grid-band.json) |
+| Yield Optimisation | Venus Yield Lens | 322046 | [BscScan](https://bscscan.com/token/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432?a=322046) | [JSON](https://range-pilot-watch.onrender.com/erc8004/venus-yield.json) |
+| Health Factor Monitoring | Venus Borrow Buffer Watch | 322090 | [BscScan](https://bscscan.com/token/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432?a=322090) | [JSON](https://range-pilot-watch.onrender.com/erc8004/venus-borrow-buffer.json) |
+
+### 8004scan status
+
+These identities are **8004scan: indexing pending**. BLOCview does not claim that 8004scan has indexed, rated, validated, or operationally verified them. Until indexing completes, the BSC registry identity and public registration JSON are the evidence sources. Existing records returned by 8004scan remain available separately and are not overwritten.
+
+## Safe assessment boundary
+
+Each profile links to real documentation and its agent-specific health endpoint. Its assessment form accepts only the documented request shape for that registered agent and forwards it to a fixed, first-party RangePilotWatch HTTPS endpoint:
+
+- RangeRebalance Lens: one non-zero ERC-8004 token ID.
+- GridBand Observer: a documented pool ID and strictly increasing, tick-aligned boundaries.
+- Venus Yield Lens: the documented stablecoin asset group and an optional subset of supported Venus markets.
+- Venus Borrow Buffer Watch: one public BSC address and an optional warning-ratio threshold.
+
+The server rejects unknown fields and does not accept caller-controlled URLs, RPC endpoints, chains, or contracts. The response is displayed as a read-only offchain receipt. It is not continuous monitoring, a safety proof, or investment advice.
+
+## Evidence and comparison model
+
+BLOCview preserves source, network, registry, registration-document, and retrieval context. Comparison explains why records differ using only available evidence. Missing reputation, activity, validation, permissions, or operational-verification evidence is shown as unavailable rather than inferred, scored as zero, or borrowed from demo profiles.
+
+Demo strategies and real live agents remain separate. Demo metrics, performance, capital values, fees, status, and activity are illustrative and labelled at the point of use. Live RangePilotWatch profiles do not inherit those fields.
+
+## Architecture
+
+- `app/live-agents/` — live discovery and evidence-first profiles.
+- `app/api/range-pilot-watch/agents/[tokenId]/assess/` — allowlisted POST-only assessment proxy.
+- `components/ReadOnlyAssessment.tsx` — bounded per-agent assessment forms and receipts.
+- `lib/range-pilot-watch-agents.ts` — typed source of truth for the four registered identities.
+- `lib/range-pilot-assessments.ts` — fixed endpoints and strict request validation.
+- `lib/8004scan.ts` — server-only adapter that preserves existing indexed records.
+- `data/agents.ts` — separate illustrative demo records.
+
+## Local development
 
 Requirements: Node.js 22.13 or newer.
 
@@ -13,90 +68,27 @@ npm install
 npm run dev
 ```
 
-Create `.env.local` with the server-side 8004scan credential:
+Optional server-only integrations use `SCAN8004_API_KEY` and `OPENAI_API_KEY`. Do not expose their values to browser code or commit local environment files. The four pending-index RangePilotWatch identities and their public evidence do not depend on those credentials.
 
-```bash
-SCAN8004_API_KEY=your_8004scan_api_key
-OPENAI_API_KEY=your_openai_api_key
-```
-
-The key is sent only from the server in the `X-API-Key` header. `.env.local` is Git-ignored and must never be exposed in browser code or committed.
-
-`OPENAI_API_KEY` is also server-only. The AI Agent Brief endpoint uses the official OpenAI JavaScript SDK and Responses API with `gpt-4o-mini`, a strict JSON schema, a 700-token output cap, no tools or web search, no response persistence in BLOCview, and a 60-second per-agent in-memory cooldown.
-
-Open the local URL printed in the terminal.
-
-Useful checks:
+Verification:
 
 ```bash
 npm run lint
 npx tsc --noEmit
+npm test
 npm run build
+git diff --check
 ```
 
-## MVP features
+## 90-second judge flow
 
-- Responsive Discover marketplace with search and category filters
-- Four-step Find Your Fit questionnaire with deterministic, fully explained demo-agent matching
-- Typed mock agents across LP rebalancing, grid trading, yield optimisation, and health-factor monitoring
-- Dynamic agent detail pages with plain-language descriptions, performance snapshots, controls, protocol context, and recent demo activity
-- Clear suitability guidance plus a direct compare action that preselects the current agent
-- Two-agent side-by-side comparison with independent selectors and URL-based preselection
-- Three-step activation preview: Review → Set preference → Confirm, followed by an explicit simulated-ready state
-- Compact profile provenance panels covering demo status, upcoming onchain verification, and illustrative freshness
-- Server-only 8004scan identity, capability, and reputation lookup with strict BNB Chain matching and safe demo fallback
-- Agent Readiness Passport on live profiles with explicit evidence coverage and provenance
-- Internal `/api/8004scan/status` and `/api/8004scan/agents/[slug]` routes; browser code never calls 8004scan directly
-- On-demand AI Agent Briefs grounded only in the selected BLOCview profile and available verified 8004scan fields
-- Neutral-language and data-basis safeguards that keep demo metrics distinct from verified identity data
-- Explicit demo-data, risk, no-wallet, no-funds-moved, and non-investment-advice notices
-- Keyboard-friendly interactions and mobile layouts
-
-## Architecture
-
-- `app/` — App Router pages and global styles
-- `components/` — reusable marketplace, navigation, comparison, and activation UI
-- `data/agents.ts` — the typed local data model and current mock agent records
-
-The UI reads from a single `Agent` type, keeping it straightforward to replace local records with indexed onchain data later. The activation experience is intentionally stateful only in the browser and sends no transaction.
-
-## Find Your Fit
-
-`/find-your-fit` helps a visitor turn four stated preferences—goal, risk comfort, priority, and experience—into an ordered view of the four BLOCview demo strategies. It is a decision aid, not a suitability assessment or financial recommendation.
-
-Matching is deterministic and runs entirely in the browser without OpenAI, API keys, accounts, or hidden model inference. The selected goal/category is the primary signal; fixed, smaller adjustments use the selected risk comfort, priority, experience level, and existing typed demo-agent facts. Every result exposes the choices and product facts used in “Why this matched,” alongside a “What we do not know” evidence panel.
-
-Only BLOCview demo strategies participate in Fit Finder ranking. Verified live 8004scan records remain separate and are not classified or recommended when their returned capabilities do not clearly support a category. Demo performance and activity remain illustrative. Fit results do not account for a visitor's finances, portfolio, liquidity needs, or capacity for loss and do not guarantee outcomes.
-
-## 8004scan registry evidence
-
-When an exact-name BNB Chain record exists, profiles show its registered identity, declared supported protocols, returned reputation fields, registration time, retrieval time, and timestamp basis. Demo strategy, performance, TVL, returns, fees, and activity remain separate and clearly illustrative. Retrieval freshness is not independent verification. If the API, key, or compatible record is unavailable, the existing demo profile remains intact.
-
-### Demo Strategies vs Live BNB Agents
-
-- **Demo Strategies** are BLOCview-authored illustrative profiles. Their strategy categories, performance, TVL, fees, activity, AI Agent Brief, and activation preview are visibly labelled as demo data.
-- **Live BNB Agents** at `/live-agents` are separate ERC-8004 registry records returned by the 8004scan Public API for BNB Chain mainnet (chain ID 56). BLOCview displays only normalized registry identity, description, declared protocol/capability, returned reputation, feedback-count, registration, retrieval provenance, and explicit evidence gaps.
-- Live agents are never silently classified into BLOCview strategy categories and do not receive demo metrics, AI Agent Briefs, or activation controls. A returned protocol/capability is shown verbatim; the BLOCview classification remains **Unclassified live agent**.
-- Requests use `SCAN8004_API_KEY` only in `lib/8004scan.ts`, which is guarded by `server-only`. Browser components receive normalized records and never receive the credential.
-
-The live list uses the documented `GET /api/v1/public/agents` endpoint with `chainId=56`, `isTestnet=false`, `page`, `limit`, `sortBy=created_at`, and `sortOrder=desc`. Pagination is rendered only when the documented `meta.pagination` fields indicate it. Live detail uses `GET /api/v1/public/agents/{chainId}/{tokenId}`. The existing demo verification path also uses documented semantic search, detail, feedback, and chains endpoints.
-
-### Agent Readiness Passport
-
-Every live detail page includes an Agent Readiness Passport covering registry identity, declared capabilities, returned reputation, activity/validation evidence, and permission/operating-control evidence. Each area is labelled **Available**, **Declared only**, or **Not available**, with a compact evidence-coverage count. This count describes field coverage only; it is not a trust score, safety score, rating, ranking, or recommendation.
-
-The passport uses only fields normalized by the existing server-side 8004scan adapter. Capabilities are shown exactly as returned and remain declarations rather than independently tested functionality. Missing reputation values remain missing rather than being converted to zero. Because the current public detail response used by BLOCview does not return independently verifiable activity, validation, wallet-permission, spend-cap, session-expiry, revocation, or payment-term evidence, those areas are explicitly marked unavailable. Live pages never borrow demo performance, strategy, TVL, trade, activation, or AI Agent Brief data.
-
-Live Proof provenance includes the returned registration time when available, retrieval time with a source-provided or local-fallback label, conservative freshness classification, and a direct 8004scan source-record link constructed from the returned BNB Chain token identifier. BLOCview presents registry evidence for research but does not verify activity, permissions, validation, performance, or safety.
-
-## Later integrations
-
-1. Add BNB Agent Studio deployment and lifecycle metadata.
-2. Introduce wallet-aware, permission-scoped activation only after a full transaction review experience exists.
-3. Add strategy-specific integrations for Altana, PancakeSwap, and TermiX.
-4. Use OpenAI API features for plain-language explanations and contextual comparisons, with citations back to raw data.
-5. Add data freshness, provenance, indexing health, and contract verification signals before presenting any metric as live.
+1. Open the public app and select **Live BNB Agents**.
+2. Point out the four equal-depth category cards and the shared BSC ERC-8004 registry.
+3. Open RangeRebalance Lens; show its token ID, registration JSON, documentation, agent-specific health link, and **8004scan: indexing pending** disclosure.
+4. Open Compare and contrast it with another category, highlighting explicit unknown reputation, activity, and validation evidence.
+5. Return to a profile, run the bounded read-only assessment, and show the offchain receipt plus the no-wallet/no-signature/no-transaction boundary.
+6. Close on the remaining three categories to demonstrate identical evidence and assessment depth.
 
 ## Current limitations
 
-Demo agents, performance figures, capital values, status indicators, and activity events are local illustrative data. The separate Live BNB Agents area contains real identity records returned by 8004scan, but BLOCview does not independently audit them. There is no wallet, smart contract execution, payment, or movement of funds in this version. Nothing in the interface is investment advice.
+8004scan indexing for these four identities is pending. BLOCview does not independently audit their registration claims, code, activity, validation, performance, permissions, or safety. External health and assessment availability depends on the public RangePilotWatch service. There is no wallet connection, signing, transaction construction, payment, execution, or movement of funds in this milestone.

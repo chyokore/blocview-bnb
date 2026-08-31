@@ -12,6 +12,7 @@ import {
 } from "../lib/range-pilot-watch.ts";
 import { composeFlagshipProof, resolveRangePilotWatchRegistryMapping } from "../lib/flagship-proof.ts";
 import { listRangePilotLiveAgents, RANGE_PILOT_REGISTRY } from "../lib/range-pilot-watch-agents.ts";
+import { ASSESSMENT_ENDPOINTS, validateAssessmentRequest } from "../lib/range-pilot-assessments.ts";
 
 function liveAgent(overrides = {}) {
   return {
@@ -232,7 +233,7 @@ test("surfaces exactly four RangePilotWatch categories with indexing pending", a
     assert.equal(agent.registry, RANGE_PILOT_REGISTRY);
     assert.match(agent.registrationUrl, /\/erc8004\/.+\.json$/);
     assert.match(agent.documentationUrl, /\/docs\/agents\/.+\.html$/);
-    assert.match(agent.healthUrl, /\/health$/);
+    assert.equal(agent.healthUrl, agent.assessmentUrl.replace(/\/assess$/, "/health"));
     assert.match(agent.assessmentUrl, /\/agents\/.+\/assess$/);
     assert.equal(agent.assessmentMode, "external-read-only-handoff");
   }
@@ -245,19 +246,45 @@ test("surfaces exactly four RangePilotWatch categories with indexing pending", a
 });
 
 test("pending-agent activation remains an external read-only no-transaction handoff", async () => {
-  const [response, route] = await Promise.all([
+  const [response, route, form, proxy] = await Promise.all([
     render("/live-agents/56/321941"),
     readFile(new URL("../app/live-agents/[chainId]/[tokenId]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/ReadOnlyAssessment.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/range-pilot-watch/agents/[tokenId]/assess/route.ts", import.meta.url), "utf8"),
   ]);
   const html = await response.text();
   assert.equal(response.status, 200);
   assert.match(html, /Reviewed external handoff/i);
   assert.match(html, /Documentation/);
-  assert.match(html, /Service health/);
+  assert.match(html, /Agent service health/);
+  assert.match(html, /Run one read-only assessment/);
   assert.match(html, /read-only assessment/i);
   assert.match(html, /No wallet connection, signing, transaction, execution, or payment occurs/i);
   assert.match(html, /not investment advice/i);
-  assert.doesNotMatch(route, /sendTransaction|eth_sendTransaction|walletConnect|privateKey|signer\./i);
+  assert.doesNotMatch(`${route}\n${form}\n${proxy}`, /sendTransaction|eth_sendTransaction|walletConnect|privateKey|signer\./i);
+  assert.doesNotMatch(route, /href=\{agent\.assessmentUrl\}/);
+  assert.match(proxy, /method:\s*"POST"/);
+  assert.match(proxy, /ASSESSMENT_ENDPOINTS\[tokenId\]/);
+});
+
+test("uses exact per-agent health and assessment endpoints", () => {
+  const agents = listRangePilotLiveAgents(new Date("2026-08-31T12:00:00.000Z"));
+  const slugs = ["range-rebalance", "grid-band", "venus-yield", "venus-borrow-buffer"];
+  agents.forEach((agent, index) => {
+    assert.equal(agent.healthUrl, `https://range-pilot-watch.onrender.com/agents/${slugs[index]}/health`);
+    assert.equal(agent.assessmentUrl, ASSESSMENT_ENDPOINTS[agent.tokenId]);
+  });
+});
+
+test("assessment validation permits only the four documented read-only request shapes", () => {
+  assert.deepEqual(validateAssessmentRequest(321941, { tokenId: "12345" }), { tokenId: "12345" });
+  assert.deepEqual(validateAssessmentRequest(321995, { poolId: "WBNB-USDT-500", boundaries: [-100000, 0, 100000] }), { poolId: "WBNB-USDT-500", boundaries: [-100000, 0, 100000] });
+  assert.deepEqual(validateAssessmentRequest(322046, { assetId: "usd-stablecoins" }), { assetId: "usd-stablecoins", markets: ["core-vUSDC", "core-vUSDT"] });
+  assert.deepEqual(validateAssessmentRequest(322090, { accountAddress: `0x${"1".repeat(40)}` }), { accountAddress: `0x${"1".repeat(40)}`, warningRatio: "1.25" });
+  assert.equal(validateAssessmentRequest(321941, { tokenId: "12345", rpcUrl: "https://example.invalid" }), null);
+  assert.equal(validateAssessmentRequest(321995, { poolId: "WBNB-USDT-500", boundaries: [0, 0] }), null);
+  assert.equal(validateAssessmentRequest(322046, { assetId: "usd-stablecoins", markets: ["unsupported"] }), null);
+  assert.equal(validateAssessmentRequest(322090, { accountAddress: `0x${"1".repeat(40)}`, warningRatio: "4" }), null);
 });
 
 test("accepts a valid available flagship response and composes chain-observed evidence", async () => {
@@ -394,8 +421,8 @@ test("pending agents render separately with truthful indexing and activation bou
   assert.match(list, /not indexed or rated by 8004scan/i);
   assert.match(detail, /Public ERC-8004 registration JSON/i);
   assert.match(detail, /Documentation/);
-  assert.match(detail, /Service health/);
-  assert.match(detail, /Open read-only assessment/);
+  assert.match(detail, /Agent service health/);
+  assert.match(detail, /Run one read-only assessment/);
   assert.match(detail, /No wallet connection, signing, transaction, execution, or payment/i);
   assert.match(detail, /not investment advice/i);
   assert.doesNotMatch(detail, /Connect wallet|Sign transaction|Execute strategy|Send transaction/i);
