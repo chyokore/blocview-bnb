@@ -182,6 +182,6 @@ export async function readPancakeSwapV3PoolEvidence({ fetchImpl = fetch, now = (
   } catch (error) {
     return error instanceof MalformedRpcError
       ? { status: "malformed", reason: "The BNB Chain RPC returned malformed pool evidence.", observedAt }
-      : { status: "unavailable", reason: "The first-party PancakeSwap V3 read is temporarily unavailable.", observedAt };
+      : { status: "unavailable", reason: "BLOCview's PancakeSwap V3 read is temporarily unavailable.", observedAt };
   }
 }

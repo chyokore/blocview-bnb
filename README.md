@@ -1,9 +1,9 @@
 # BLOCview
 
-BLOCview is a public, evidence-first marketplace for discovering, understanding, comparing, and safely assessing AI agents on BNB Chain. It was built for the BNB Chain Smart Money Era main track.
+BLOCview helps people discover, understand, compare, and assess AI agents on BNB Chain using evidence they can inspect. It was built for the BNB Chain Smart Money Era main track.
 
 - Public app: https://blocview-agents.chinyereokore.chatgpt.site
-- Live-agent marketplace: https://blocview-agents.chinyereokore.chatgpt.site/live-agents
+- Live agent marketplace: https://blocview-agents.chinyereokore.chatgpt.site/live-agents
 - Network: BNB Smart Chain mainnet, chain ID 56
 - Source: https://github.com/chinyereokore/blocview-agents
 
@@ -11,11 +11,13 @@ BLOCview is a public, evidence-first marketplace for discovering, understanding,
 
 1. Land on BLOCview and open **Live BNB Agents**.
 2. Find one real RangePilotWatch agent in each required category.
-3. Open a profile to inspect registry identity, public registration evidence, documentation, agent-specific health, evidence gaps, and operating boundaries.
+3. Open a profile to inspect registry identity, public registration evidence, documentation, agent health, evidence gaps, and operating boundaries.
 4. Select two to four live agents and compare capability, evidence, freshness, provenance, safety boundaries, and limitations without mixing in demo records.
-5. Submit a bounded, one-time assessment request through BLOCview and review the returned offchain evidence receipt.
+5. Run a bounded assessment through BLOCview and review the evidence it returns.
 
-The assessment handoff does not connect a wallet, request a signature, construct or send a transaction, move funds, execute a strategy, or make an investment recommendation.
+The assessment does not connect a wallet, request a signature, construct or send a transaction, move funds, execute a strategy, or make an investment recommendation.
+
+BLOCview provides an evidence checkpoint before activation. Its assessment flows are bounded and read only. They do not move funds or submit transactions. A completed receipt gives the user evidence from one moment in time to review before opening the agent's registration, documentation, or health source. BLOCview provides no execution action.
 
 ## Four registered BSC agents
 
@@ -34,42 +36,42 @@ These identities are **8004scan: indexing pending**. BLOCview does not claim tha
 
 ## Safe assessment boundary
 
-Each profile links to real documentation and its agent-specific health endpoint. Its assessment form accepts only the documented request shape for that registered agent and forwards it to a fixed, first-party RangePilotWatch HTTPS endpoint:
+Each profile links to real documentation and the health endpoint for that agent. Its assessment form accepts only the documented request shape and forwards it to a fixed RangePilotWatch HTTPS endpoint:
 
-- RangeRebalance Lens: one non-zero ERC-8004 token ID.
-- GridBand Observer: a documented pool ID and strictly increasing, tick-aligned boundaries.
+- RangeRebalance Lens: one nonzero ERC-8004 token ID.
+- GridBand Observer: a documented pool ID and strictly increasing boundaries aligned to tick spacing.
 - Venus Yield Lens: the documented stablecoin asset group and an optional subset of supported Venus markets.
-- Venus Borrow Buffer Watch: one public BSC address and an optional warning-ratio threshold.
+- Venus Borrow Buffer Watch: one public BSC address and an optional warning ratio.
 
-The server rejects unknown fields and does not accept caller-controlled URLs, RPC endpoints, chains, or contracts. The response is displayed as a read-only offchain receipt. It is not continuous monitoring, a safety proof, or investment advice.
+The server rejects unknown fields and does not accept a URL, RPC endpoint, chain, or contract supplied by the caller. BLOCview displays the response as an offchain evidence receipt. It is not continuous monitoring, a safety proof, or investment advice.
 
-### First-party PancakeSwap V3 evidence
+### PancakeSwap V3 evidence from BLOCview
 
-For GridBand Observer, BLOCview now performs its own server-side, read-only verification of the single allowlisted BSC mainnet PancakeSwap V3 WBNB/USDT 0.05% pool. At one pinned BNB Chain block it reads the pool bytecode and block timestamp plus `factory()`, `token0()`, `token1()`, `fee()`, `tickSpacing()`, `slot0()`, and `liquidity()`.
+For GridBand Observer, BLOCview verifies the approved BSC mainnet PancakeSwap V3 WBNB/USDT 0.05% pool directly from its server without submitting transactions. At one pinned BNB Chain block, it reads the pool bytecode and block timestamp plus `factory()`, `token0()`, `token1()`, `fee()`, `tickSpacing()`, `slot0()`, and `liquidity()`.
 
-The returned identity fields are compared with BLOCview's internal allowlist before the observation can be labelled verified. A mismatch, malformed response, missing contract, or unavailable critical getter produces an explicit failure rather than normal evidence or demo substitution. Integer pool state is retained as exact decimal strings where JavaScript numbers would be unsafe.
+BLOCview compares the returned identity fields with its internal allowlist before labelling the observation verified. A mismatch, malformed response, missing contract, or unavailable critical getter produces a clear failure instead of normal evidence or demo substitution. Integer pool state remains in exact decimal strings where JavaScript numbers would be unsafe.
 
-GridBand compares the verified current pool tick with caller-supplied grid boundaries. It does not inspect an LP NFT, infer historical crossings, recommend trades or ranges, or modify liquidity. RangePilotWatch remains a separately timed secondary cross-check. RangeRebalance Lens is the distinct LP-position pathway and remains externally implemented in this milestone.
+GridBand compares the verified current pool tick with grid boundaries supplied by the caller. It does not inspect an LP NFT, infer historical crossings, recommend trades or ranges, or modify liquidity. RangePilotWatch remains a separate cross check captured at a different time. RangeRebalance Lens is the separate LP position pathway and remains externally implemented in this milestone.
 
 ## Evidence and comparison model
 
-BLOCview preserves source, network, registry, registration-document, and retrieval context. Its shareable live comparison explains why records differ using only available evidence, beginning with intended task and observed state rather than technical identity fields. Missing reputation, activity, validation, permissions, or operational-verification evidence is shown as unavailable rather than inferred, scored as zero, or borrowed from demo profiles.
+BLOCview preserves the source, network, registry, registration document, and retrieval context. Its shareable comparison explains why live records differ using only the evidence available. It starts with the task and observed state instead of technical identity fields. Missing reputation, activity, validation, permission, or operation evidence is shown as unavailable. BLOCview does not infer it, score it as zero, or borrow it from demo profiles.
 
-Evidence coverage counts objective signals such as registry identity, documentation, a health endpoint, a bounded assessment, on-chain evidence, pinned-block provenance, an external cross-check, and indexed reputation. **It is not a trust, security, profitability, quality, or suitability score.** A signal is counted only when the corresponding evidence exists; unavailable evidence remains visible separately.
+Evidence Coverage counts objective signals such as registry identity, documentation, a health endpoint, a bounded assessment, evidence from BNB Chain, provenance from a pinned block, an external cross check, and indexed reputation. **It is not a rating of trust, security, profitability, quality, or suitability.** A signal counts only when the corresponding evidence exists. Unavailable evidence remains visible separately.
 
 Demo strategies and real live agents remain separate. Demo metrics, performance, capital values, fees, status, and activity are illustrative and labelled at the point of use. Live RangePilotWatch profiles do not inherit those fields.
 
 ## Architecture
 
-- `app/live-agents/` — live discovery and evidence-first profiles.
-- `app/api/range-pilot-watch/agents/[tokenId]/assess/` — allowlisted POST-only assessment proxy.
-- `components/ReadOnlyAssessment.tsx` — bounded per-agent assessment forms and receipts.
-- `lib/range-pilot-watch-agents.ts` — typed source of truth for the four registered identities.
-- `lib/range-pilot-assessments.ts` — fixed endpoints and strict request validation.
-- `lib/pancakeswap-v3.ts` — server-only pinned-block reader and allowlist verification for the fixed PancakeSwap V3 pool.
-- `lib/gridband-evidence.ts` — first-party GridBand placement receipt and deterministic external cross-check.
-- `lib/8004scan.ts` — server-only adapter that preserves existing indexed records.
-- `data/agents.ts` — separate illustrative demo records.
+- `app/live-agents/`: live discovery and profiles built around evidence.
+- `app/api/range-pilot-watch/agents/[tokenId]/assess/`: allowlisted proxy that accepts POST requests only.
+- `components/ReadOnlyAssessment.tsx`: bounded assessment forms and receipts for each agent.
+- `lib/range-pilot-watch-agents.ts`: typed source of truth for the four registered identities.
+- `lib/range-pilot-assessments.ts`: fixed endpoints and strict request validation.
+- `lib/pancakeswap-v3.ts`: `server-only` reader that pins one block and verifies the fixed PancakeSwap V3 pool against an allowlist.
+- `lib/gridband-evidence.ts`: GridBand placement receipt and deterministic RangePilotWatch cross check.
+- `lib/8004scan.ts`: `server-only` adapter that preserves existing indexed records.
+- `data/agents.ts`: separate illustrative demo records.
 
 ## Local development
 
@@ -80,7 +82,7 @@ npm install
 npm run dev
 ```
 
-Optional server-only integrations use `SCAN8004_API_KEY` and `OPENAI_API_KEY`. Do not expose their values to browser code or commit local environment files. The four pending-index RangePilotWatch identities and their public evidence do not depend on those credentials.
+Optional `server-only` integrations use `SCAN8004_API_KEY` and `OPENAI_API_KEY`. Do not expose their values to browser code or commit local environment files. The four RangePilotWatch identities awaiting indexing and their public evidence do not depend on those credentials.
 
 Verification:
 
@@ -95,10 +97,10 @@ git diff --check
 ## 90-second judge flow
 
 1. Open the public app and select **Live BNB Agents**.
-2. Point out the four equal-depth category cards and the shared BSC ERC-8004 registry.
-3. Open RangeRebalance Lens; show its token ID, registration JSON, documentation, agent-specific health link, and **8004scan: indexing pending** disclosure.
+2. Point out the four category cards with equal detail and the shared BSC ERC-8004 registry.
+3. Open RangeRebalance Lens. Show its token ID, registration JSON, documentation, health link, and **8004scan: indexing pending** disclosure.
 4. Open Compare and contrast it with another category, highlighting explicit unknown reputation, activity, and validation evidence.
-5. Return to a profile, run the bounded read-only assessment, and show the offchain receipt plus the no-wallet/no-signature/no-transaction boundary.
+5. Return to a profile, run the bounded read only assessment, and show the offchain receipt. Point out that it requires no wallet, signature, or transaction.
 6. Close on the remaining three categories to demonstrate identical evidence and assessment depth.
 
 ## Current limitations

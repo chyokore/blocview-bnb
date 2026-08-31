@@ -14,4 +14,4 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   return <main><Header /><div className="compare-wrap"><LiveAgentComparison records={records} /></div><Footer /></main>;
 }
 
-function ComparisonState() { return <main><Header /><div className="live-shell"><div className="empty-state live-state"><span className="eyebrow">Live comparison</span><h1>Select 2–4 live agents</h1><p>Only the four first-party registered BSC agents can enter this evidence comparison. Invalid, duplicate, and demo IDs are excluded.</p><Link href="/live-agents" className="primary-button">Choose live agents</Link></div></div><Footer /></main>; }
+function ComparisonState() { return <main><Header /><div className="live-shell"><div className="empty-state live-state"><span className="eyebrow">Live comparison</span><h1>Select 2–4 live agents</h1><p>This comparison includes only the four registered first party BSC agents. Invalid, duplicate, and demo IDs are excluded.</p><Link href="/live-agents" className="primary-button">Choose live agents</Link></div></div><Footer /></main>; }

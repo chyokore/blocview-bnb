@@ -79,7 +79,7 @@ export function FitFinder() {
         <div className="fit-explanation"><div><h4>Why this matched</h4><ul>{match.reasons.map((reason) => <li key={reason}><CheckIcon />{reason}</li>)}</ul></div><div className="fit-unknowns"><h4>What we do not know</h4><ul>{match.unknowns.map((unknown) => <li key={unknown}>{unknown}</li>)}</ul></div></div>
         <div className="fit-demo-metric"><span>Illustrative demo snapshot</span><strong>{match.agent.return30d > 0 ? `+${match.agent.return30d}% demo 30-day return` : "Alerts-only demo; no return shown"}</strong><small>Not live performance and not a forecast.</small></div><div className="fit-match-actions"><Link className="primary-button" href={`/agents/${match.agent.slug}`}>View agent profile</Link><Link className="secondary-button" href={`/compare?agent=${match.agent.slug}`}>Compare agents</Link><Link className="text-button" href="/live-agents">Explore verified live BNB Chain agents <ArrowIcon /></Link></div>
       </article>)}</div>
-      <aside className="live-records-note"><strong>Verified BNB Chain records — review capabilities before hiring.</strong><p>Live 8004scan agents are kept outside this demo ranking. BLOCview does not infer a strategy category when returned capabilities are unclear.</p><Link href="/live-agents">Browse live records <ArrowIcon /></Link></aside>
+      <aside className="live-records-note"><strong>Review live BNB Chain records before you continue.</strong><p>Live 8004scan agents stay outside this demo ranking. BLOCview does not infer a strategy category when the returned capabilities are unclear.</p><Link href="/live-agents">Browse live records <ArrowIcon /></Link></aside>
     </section>}
   </div>;
 }

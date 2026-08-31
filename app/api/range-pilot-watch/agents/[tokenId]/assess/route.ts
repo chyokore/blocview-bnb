@@ -13,7 +13,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 }); }
   const validated = validateAssessmentRequest(tokenId, body);
-  if (!validated) return NextResponse.json({ error: "The request does not match this agent's documented read-only contract." }, { status: 400 });
+  if (!validated) return NextResponse.json({ error: "The request does not match the documented input for this read only assessment." }, { status: 400 });
   async function requestExternal() {
     return fetch(ASSESSMENT_ENDPOINTS[assessmentTokenId], {
       method: "POST",

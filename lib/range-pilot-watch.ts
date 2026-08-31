@@ -10,7 +10,7 @@ export const FLAGSHIP_PROOF_REQUEST = {
   lowerPrice: 500,
   upperPrice: 1500,
   feeTier: 500,
-  userGoal: "Observe whether the current read-only pool spot-state estimate is within the stated range",
+  userGoal: "Observe whether the current pool spot state estimate is within the stated range without making changes",
 } as const;
 
 export type RangePilotWatchRequest = {

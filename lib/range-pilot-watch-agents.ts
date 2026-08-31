@@ -43,10 +43,10 @@ function record(tokenId: number, name: string, category: RangePilotCategory, slu
 export function listRangePilotLiveAgents(now = new Date()): readonly RangePilotLiveAgent[] {
   const retrievedAt = now.toISOString();
   return [
-    record(321941, "RangeRebalance Lens", "Rebalancing", "range-rebalance", "Read-only PancakeSwap V3 position-range assessment; it does not rebalance or execute.", retrievedAt),
-    record(321995, "GridBand Observer", "Grid Trading", "grid-band", "Read-only placement of an allowlisted PancakeSwap V3 pool tick in a caller-declared grid; it provides no buy or sell signals.", retrievedAt),
-    record(322046, "Venus Yield Lens", "Yield Optimisation", "venus-yield", "Read-only comparison of displayed supply rates and stored values for two allowlisted Venus markets; it makes no allocation recommendation.", retrievedAt),
-    record(322090, "Venus Borrow Buffer Watch", "Health Factor Monitoring", "venus-borrow-buffer", "Read-only Venus account-liquidity observation; it is not continuous monitoring or a liquidation prediction.", retrievedAt),
+    record(321941, "RangeRebalance Lens", "Rebalancing", "range-rebalance", "Checks whether a public PancakeSwap V3 position is in range. It does not rebalance or execute.", retrievedAt),
+    record(321995, "GridBand Observer", "Grid Trading", "grid-band", "Places the current tick for an approved PancakeSwap V3 pool within a grid supplied by the caller. It does not provide buy or sell signals.", retrievedAt),
+    record(322046, "Venus Yield Lens", "Yield Optimisation", "venus-yield", "Compares displayed supply rates and stored values for two approved Venus markets. It does not recommend an allocation.", retrievedAt),
+    record(322090, "Venus Borrow Buffer Watch", "Health Factor Monitoring", "venus-borrow-buffer", "Observes Venus account liquidity at one moment in time. It is not continuous monitoring or a liquidation prediction.", retrievedAt),
   ];
 }
 

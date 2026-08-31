@@ -124,10 +124,30 @@ test("server-renders BLOCview instead of the obsolete starter screen", async () 
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>BLOCview — Understand onchain AI agents<\/title>/i);
+  assert.match(html, /<title>BLOCview: Understand onchain AI agents<\/title>/i);
   assert.match(html, /Built for the BNB Chain agent economy/i);
   assert.match(html, /Explore demo strategies/i);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|react-loading-skeleton/i);
+});
+
+test("homepage copy is human, complete, and free of an em dash in the hero message", async () => {
+  const response = await render();
+  const html = await response.text();
+  const heroCopy = "Discover real BSC agents, see what the evidence supports, and compare what is known and unknown. BLOCview never asks for wallet access.";
+  assert.match(html, new RegExp(heroCopy.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(heroCopy, /—/);
+  for (const stage of ["Find", "Compare", "Verify", "Test", "Continue"]) assert.match(html, new RegExp(`>${stage}<`));
+});
+
+test("all four live profiles retain accurate read only assessment and no execution copy", async () => {
+  for (const tokenId of [321941, 321995, 322046, 322090]) {
+    const response = await render(`/live-agents/56/${tokenId}`);
+    const html = await response.text();
+    assert.equal(response.status, 200);
+    assert.match(html, /Run read only assessment/i);
+    assert.match(html, /No wallet connection/i);
+    assert.match(html, /No transaction is submitted/i);
+  }
 });
 
 test("local strategy cards are explicitly demo-only and never registry-verified", async () => {
@@ -225,14 +245,14 @@ test("keeps comparison truthful, live-only, actionable, and free of execution co
   assert.doesNotMatch(liveComparisonSource, /from ["']@\/data\/agents|ActivationModal|return30d|30-day return|APY|TVL/i);
   assert.doesNotMatch(liveComparisonSource, /Highly Trusted|Low Risk|Safe Agent|guaranteed profit|best performing|\d+\s*\/\s*100/i);
   assert.doesNotMatch(liveComparisonSource, /Connect wallet|Sign transaction|Send transaction|Pay now|Execute strategy/i);
-  assert.match(component, /Evidence coverage is not a trust score/);
-  assert.match(component, /Run read-only assessment/);
-  assert.match(liveComparisonSource, /First-party BLOCview verification of the allowlisted pool identity and pinned-block state/);
+  assert.match(component, /Evidence Coverage shows how many verification signals are available/);
+  assert.match(component, /Run read only assessment/);
+  assert.match(liveComparisonSource, /BLOCview verifies the approved pool identity and its state at one pinned block/);
   assert.match(list, /selected\.length >= 4/);
   assert.match(list, /pathname: "\/compare"/);
   for (const name of ["RangeRebalance Lens", "GridBand Observer"]) assert.match(html, new RegExp(name));
   for (const name of ["RangeRebalance Lens", "GridBand Observer", "Venus Yield Lens", "Venus Borrow Buffer Watch"]) assert.match(fourHtml, new RegExp(name));
-  assert.match(html, /Unknown \/ unavailable evidence/);
+  assert.match(html, /What is still unknown/);
   assert.doesNotMatch(html, /Range Pilot|Grid Sentinel|Yield Navigator|Health Guard/);
 });
 
@@ -296,17 +316,57 @@ test("pending-agent activation remains an external read-only no-transaction hand
   ]);
   const html = await response.text();
   assert.equal(response.status, 200);
-  assert.match(html, /Reviewed external handoff/i);
-  assert.match(html, /Documentation/);
-  assert.match(html, /Agent service health/);
-  assert.match(html, /Run one read-only assessment/);
-  assert.match(html, /read-only assessment/i);
-  assert.match(html, /No wallet connection, signing, transaction, execution, or payment occurs/i);
+  assert.match(html, /Evidence checkpoint/i);
+  assert.match(html, /View documentation/);
+  assert.match(html, /Check health/);
+  assert.match(html, /Run read only assessment/);
+  assert.match(html, /read only assessment/i);
+  assert.match(html, /does not connect a wallet, request a signature or payment, submit a transaction, or execute a strategy/i);
   assert.match(html, /not investment advice/i);
   assert.doesNotMatch(`${route}\n${form}\n${proxy}`, /sendTransaction|eth_sendTransaction|walletConnect|privateKey|signer\./i);
   assert.doesNotMatch(route, /href=\{agent\.assessmentUrl\}/);
   assert.match(proxy, /method:\s*"POST"/);
   assert.match(proxy, /ASSESSMENT_ENDPOINTS\[(?:tokenId|assessmentTokenId)\]/);
+});
+
+test("safe activation is an evidence checkpoint with explicit completion and continuation semantics", async () => {
+  const [home, profile, assessment, comparison] = await Promise.all([
+    (await render("/")).text(),
+    (await render("/live-agents/56/321995")).text(),
+    readFile(new URL("../components/ReadOnlyAssessment.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/LiveAgentComparison.tsx", import.meta.url), "utf8"),
+  ]);
+  for (const stage of ["Find", "Compare", "Verify", "Test", "Continue"]) assert.match(home, new RegExp(`>${stage}<`));
+  assert.match(home, /evidence checkpoint before you continue to an agent or source/i);
+  assert.match(profile, /Before you run the assessment/i);
+  assert.match(profile, /What happens/i);
+  assert.match(profile, /What does not happen/i);
+  assert.match(profile, /Run read only assessment/i);
+  assert.match(assessment, /Assessment complete\. No execution occurred\./);
+  assert.match(assessment, /Evidence checkpoint complete/);
+  assert.match(assessment, /Review evidence/);
+  assert.match(assessment, /View registration/);
+  assert.match(assessment, /View documentation/);
+  assert.match(assessment, /Check health/);
+  assert.match(assessment, /BLOCview does not provide an execution action/i);
+  assert.match(comparison, /Assessment mode/);
+  assert.match(comparison, /Evidence Coverage shows how many verification signals are available/);
+});
+
+test("final activation polish preserves evidence counts, explicit unknowns, and agent-specific boundaries", async () => {
+  const records = buildLiveComparison([321941, 321995, 322046, 322090]);
+  assert.deepEqual(records.map((record) => record.coverage.available), [4, 7, 4, 4]);
+  assert.ok(records.every((record) => record.coverage.total === 8));
+  assert.ok(records.every((record) => record.activationMode === "Read only assessment"));
+  assert.match(records[0].observes, /does not establish ownership/i);
+  assert.match(records[0].unsupportedAction, /Does not rebalance/i);
+  assert.match(records[1].unsupportedAction, /Does not inspect an LP NFT/i);
+  assert.match(records[2].limitation, /guaranteed, or optimal yield/i);
+  assert.match(records[3].limitation, /guarantee that liquidation will be prevented/i);
+  const comparison = await (await render("/compare?agents=321941,321995,322046,322090")).text();
+  assert.match(comparison, /Historical performance: Not established/i);
+  assert.match(comparison, /Execution permissions: Not applicable to the BLOCview read only assessment/i);
+  assert.doesNotMatch(comparison, /className=.*trust-score|security score|profitability score|Hire agent|Trade now|Connect wallet|Sign transaction|Pay now/i);
 });
 
 test("uses exact per-agent health and assessment endpoints", () => {
@@ -428,7 +488,7 @@ test("flagship UI is standalone, has no demo fallback, and introduces no action 
     readFile(new URL("../lib/live-comparison.ts", import.meta.url), "utf8"),
   ]);
   const source = `${component}\n${route}\n${client}`;
-  assert.match(component, /standalone read-only observation/i);
+  assert.match(component, /separate read only observation/i);
   assert.match(component, /not an 8004scan registration/i);
   assert.match(component, /will not retry automatically or substitute demo data/i);
   assert.match(component, /What BLOCview observed/);
@@ -456,10 +516,11 @@ test("pending agents render separately with truthful indexing and activation bou
   assert.match(list, /8004scan status:[\s\S]*indexing pending/i);
   assert.match(list, /not indexed or rated by 8004scan/i);
   assert.match(detail, /Public ERC-8004 registration JSON/i);
-  assert.match(detail, /Documentation/);
-  assert.match(detail, /Agent service health/);
-  assert.match(detail, /Run one read-only assessment/);
-  assert.match(detail, /No wallet connection, signing, transaction, execution, or payment/i);
+  assert.match(detail, /View documentation/);
+  assert.match(detail, /Check health/);
+  assert.match(detail, /Run read only assessment/);
+  assert.match(detail, /No wallet connection/i);
+  assert.match(detail, /No transaction is submitted/i);
   assert.match(detail, /not investment advice/i);
   assert.doesNotMatch(detail, /Connect wallet|Sign transaction|Execute strategy|Send transaction/i);
 });

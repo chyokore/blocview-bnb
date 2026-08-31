@@ -27,7 +27,7 @@ export function FlagshipLiveProof() {
     let active = true;
     requestProof()
       .then((proof) => { if (active) setView({ status: "ready", proof }); })
-      .catch(() => { if (active) setView({ status: "client-error", message: "BLOCview could not reach its server-side proof route." }); });
+      .catch(() => { if (active) setView({ status: "client-error", message: "BLOCview could not reach its server proof route." }); });
     return () => { active = false; };
   }, []);
 
@@ -35,11 +35,11 @@ export function FlagshipLiveProof() {
     setView({ status: "checking" });
     requestProof()
       .then((proof) => setView({ status: "ready", proof }))
-      .catch(() => setView({ status: "client-error", message: "BLOCview could not reach its server-side proof route." }));
+      .catch(() => setView({ status: "client-error", message: "BLOCview could not reach its server proof route." }));
   }
 
   if (view.status === "checking") return <section className="flagship-proof proof-checking" aria-live="polite">
-    <div><span className="eyebrow">Live service proof</span><h2>Checking Range Pilot Watch…</h2><p>Making one bounded server-side request. Render may need time to wake; BLOCview will not retry automatically or substitute demo data.</p></div>
+    <div><span className="eyebrow">Live service proof</span><h2>Checking Range Pilot Watch…</h2><p>BLOCview is making one bounded request from its server. The service may need time to wake. BLOCview will not retry automatically or substitute demo data.</p></div>
   </section>;
 
   if (view.status === "client-error") return <section className="flagship-proof proof-unavailable" aria-live="polite">
@@ -49,7 +49,7 @@ export function FlagshipLiveProof() {
   const { proof } = view;
   return <section className="flagship-proof" aria-labelledby="flagship-proof-title" aria-live="polite">
     <header className="flagship-proof-header">
-      <div><span className="eyebrow">Live service proof</span><h2 id="flagship-proof-title">Range Pilot Watch</h2><p>A standalone read-only observation—not an 8004scan registration or link to the illustrative Range Pilot demo.</p></div>
+      <div><span className="eyebrow">Live service proof</span><h2 id="flagship-proof-title">Range Pilot Watch</h2><p>This is a separate read only observation. It is not an 8004scan registration or a link to the illustrative Range Pilot demo.</p></div>
       <span className={`proof-status proof-status-${proof.status.toLowerCase().replaceAll(" ", "-")}`}>{proof.status}</span>
     </header>
 
@@ -73,7 +73,7 @@ export function FlagshipLiveProof() {
     <div className="proof-story">
       <div><strong>1 · Declared</strong><span>Range Pilot Watch identifies its service and fixed observation scope.</span></div>
       <div><strong>2 · Registry-observed</strong><span>No authoritative 8004scan linkage is claimed.</span></div>
-      <div><strong>3 · Service / chain-observed</strong><span>Only returned read-only pool-state evidence is shown.</span></div>
+      <div><strong>3 · Service and chain observation</strong><span>Only the pool state evidence returned by the read only check is shown.</span></div>
       <div><strong>4 · Unknown</strong><span>Safety, performance, permissions, custody, and execution quality remain unknown.</span></div>
     </div>
 

@@ -64,7 +64,7 @@ export function composeGridBandReceipt(request: { poolId: "WBNB-USDT-500"; bound
     externalCrossCheck: crossCheckGridBand(firstParty.evidence, externalValue),
     limitations: [
       "Point-in-time pool evidence can become stale immediately after the pinned block.",
-      "Grid boundaries are caller-supplied and are not an LP position or a strategy recommendation.",
+      "The caller supplied the grid boundaries. They are not an LP position or a strategy recommendation.",
       "No wallet, signing, swap, transaction, approval, liquidity modification, payment, or execution is performed.",
     ],
   };
