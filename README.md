@@ -12,7 +12,7 @@ BLOCview is a public, evidence-first marketplace for discovering, understanding,
 1. Land on BLOCview and open **Live BNB Agents**.
 2. Find one real RangePilotWatch agent in each required category.
 3. Open a profile to inspect registry identity, public registration evidence, documentation, agent-specific health, evidence gaps, and operating boundaries.
-4. Compare two agents using only disclosed evidence, with unavailable reputation, activity, and validation data left unknown.
+4. Select two to four live agents and compare capability, evidence, freshness, provenance, safety boundaries, and limitations without mixing in demo records.
 5. Submit a bounded, one-time assessment request through BLOCview and review the returned offchain evidence receipt.
 
 The assessment handoff does not connect a wallet, request a signature, construct or send a transaction, move funds, execute a strategy, or make an investment recommendation.
@@ -53,7 +53,9 @@ GridBand compares the verified current pool tick with caller-supplied grid bound
 
 ## Evidence and comparison model
 
-BLOCview preserves source, network, registry, registration-document, and retrieval context. Comparison explains why records differ using only available evidence. Missing reputation, activity, validation, permissions, or operational-verification evidence is shown as unavailable rather than inferred, scored as zero, or borrowed from demo profiles.
+BLOCview preserves source, network, registry, registration-document, and retrieval context. Its shareable live comparison explains why records differ using only available evidence, beginning with intended task and observed state rather than technical identity fields. Missing reputation, activity, validation, permissions, or operational-verification evidence is shown as unavailable rather than inferred, scored as zero, or borrowed from demo profiles.
+
+Evidence coverage counts objective signals such as registry identity, documentation, a health endpoint, a bounded assessment, on-chain evidence, pinned-block provenance, an external cross-check, and indexed reputation. **It is not a trust, security, profitability, quality, or suitability score.** A signal is counted only when the corresponding evidence exists; unavailable evidence remains visible separately.
 
 Demo strategies and real live agents remain separate. Demo metrics, performance, capital values, fees, status, and activity are illustrative and labelled at the point of use. Live RangePilotWatch profiles do not inherit those fields.
 

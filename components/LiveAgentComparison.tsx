@@ -1,50 +1,34 @@
 import Link from "next/link";
-import type { LiveComparisonResult } from "@/lib/live-comparison";
+import type { ComparisonEvidenceState, LiveAgentComparisonRecord } from "@/lib/live-comparison";
 import { ArrowIcon, ShieldIcon } from "./icons";
 
-function label(result: LiveComparisonResult, index: number) {
-  const agent = result.records[index].agent;
-  return agent.name ?? `ERC-8004 #${agent.tokenId}`;
-}
+const yesNo = (value: boolean) => value ? "Yes" : "No";
 
-function reputation(result: LiveComparisonResult, index: number) {
-  const value = result.records[index].evidence.reputation;
-  if (!value) return "Not available from this record";
-  return `Score ${value.score ?? "not returned"} · Stars ${value.stars ?? "not returned"} · Feedback ${value.feedbackCount ?? "not returned"}`;
-}
+export function LiveAgentComparison({ records }: { records: LiveAgentComparisonRecord[] }) {
+  return <div className="evidence-compare">
+    <header className="evidence-compare-heading"><span className="eyebrow">Compare live BSC agents</span><h1>Evidence before<br /><span>activation.</span></h1><p>See capability, evidence, safety boundaries, and unknowns side by side before choosing a read-only test.</p></header>
+    <div className="comparison-principle"><ShieldIcon /><p><strong>Evidence coverage is not a trust score.</strong> It counts available evidence signals—not security, profitability, quality, or suitability.</p></div>
 
-export function LiveAgentComparison({ result, requirementText, leftKey, rightKey }: { result: LiveComparisonResult; requirementText: string; leftKey: string; rightKey: string }) {
-  const recommended = result.recommendedAgentId ? result.records.find((record) => record.agent.agentId === result.recommendedAgentId) : undefined;
-  return <div className="live-compare">
-    <header className="live-compare-heading"><span className="eyebrow">Live registration comparison</span><h1>Compare evidence,<br /><span>not promises.</span></h1><p>Two ERC-8004 records, evaluated only against their cited source evidence and the requirements you state.</p></header>
-    <div className="live-compare-separation"><span>LIVE RECORDS ONLY</span>Demo strategies and illustrative metrics are excluded from this comparison.</div>
-    <form className="requirement-form" action="/live-agents/compare" method="get">
-      <input type="hidden" name="left" value={leftKey} /><input type="hidden" name="right" value={rightKey} />
-      <label htmlFor="requirements">What capabilities do you require?</label>
-      <div><input id="requirements" name="requirements" defaultValue={requirementText} placeholder="e.g. trading, data analysis" maxLength={240} /><button className="primary-button" type="submit">Update rationale</button></div>
-      <small>Use comma-separated capability requirements. Matching is deterministic against declared labels only.</small>
-    </form>
+    <section className="choice-summary" aria-labelledby="choice-summary-title"><span className="eyebrow">How these agents differ</span><h2 id="choice-summary-title">Choose by intended task—not a ranking.</h2><div>{records.map(({ agent, bestFor }) => <p key={agent.tokenId}><strong>{agent.name}</strong> {bestFor.charAt(0).toLowerCase() + bestFor.slice(1)}</p>)}</div></section>
 
-    <section className={`best-fit-panel ${result.outcome === "no-clear-best-fit" ? "inconclusive" : ""}`} aria-labelledby="best-fit-title">
-      <div className="best-fit-summary"><span className="eyebrow">Best fit for your stated requirements</span><h2 id="best-fit-title">{result.headline}</h2><p>{result.runnerUpExplanation}</p>{result.requirements.length ? <div className="requirement-tags">{result.requirements.map((requirement) => <span key={requirement}>{requirement}</span>)}</div> : <strong className="requirement-warning">No capability requirements were supplied; the result remains inconclusive.</strong>}</div>
-      <div className="best-fit-reasons"><h3>{recommended ? `Why ${recommended.agent.name ?? `#${recommended.agent.tokenId}`}` : "Why this is inconclusive"}</h3>{(recommended ? recommended.weightedReasons : result.records[0].weightedReasons).map((reason) => <div key={reason.criterion}><strong>+{reason.points}</strong><p>{reason.explanation}</p></div>)}</div>
-      <div className="decision-support-notice"><ShieldIcon /><p>{result.decisionSupportNotice}</p></div>
-    </section>
-
-    <section className="live-compare-table" aria-label="Live registry record comparison">
-      <div className="live-compare-row live-compare-records"><div>Registry record</div>{result.records.map((record) => <article key={record.agent.agentId}><span className={`source-badge ${record.agent.source === "8004scan" ? "verified" : "pending"}`}>{record.agent.source === "8004scan" ? "8004scan registry record" : "8004scan: indexing pending"}</span><h2>{record.agent.name ?? `ERC-8004 #${record.agent.tokenId}`}</h2><p>{record.agent.network} · Token #{record.agent.tokenId}</p><Link href={record.evidence.source.url} target="_blank" rel="noreferrer">Open source evidence <ArrowIcon /></Link></article>)}</div>
-      <CompareRow label="Declared capabilities" values={result.records.map((record) => record.evidence.declaredCapabilities.length ? record.evidence.declaredCapabilities.join(" · ") : "Not available from this record")} />
-      <CompareRow label="Capability match" values={result.records.map((record) => `${record.matchedRequirements.length} of ${result.requirements.length} stated requirements`)} />
-      <CompareRow label="Evidence coverage" values={result.records.map((record) => `${record.evidence.coverage.available} of ${record.evidence.coverage.total} areas`)} />
-      <CompareRow label="Retrieval freshness" values={result.records.map((record) => `${record.evidence.retrieval.freshness} · ${record.evidence.retrieval.timestampBasis === "source-provided" ? "source timestamp" : "local fallback"}`)} />
-      <CompareRow label="Source-returned reputation" values={[reputation(result, 0), reputation(result, 1)]} />
-      <CompareRow label="Weighted evidence total" values={result.records.map((record) => `${record.score} points`)} />
-      <div className="live-compare-row live-compare-gaps"><div>Disqualifiers and unknowns</div>{result.records.map((record) => <div key={record.agent.agentId}><strong>{record.disqualifiers.length ? "Disqualifiers" : "No evidence disqualifier triggered"}</strong>{record.disqualifiers.length > 0 && <ul>{record.disqualifiers.map((item) => <li key={item}>{item}</li>)}</ul>}<strong>Unknowns</strong><ul>{record.unknowns.map((item) => <li key={item}>{item}</li>)}</ul></div>)}</div>
-      <div className="live-compare-actions"><div /><Link href={`/live-agents/${result.records[0].agent.chainId}/${result.records[0].agent.tokenId}`}>View {label(result, 0)} <ArrowIcon /></Link><Link href={`/live-agents/${result.records[1].agent.chainId}/${result.records[1].agent.tokenId}`}>View {label(result, 1)} <ArrowIcon /></Link></div>
-    </section>
+    <section className="comparison-cards" aria-label="Selected live agent comparison">{records.map((record) => <article className="comparison-agent" key={record.agent.tokenId}>
+      <header><div><span>{record.agent.category}</span><h2>{record.agent.name}</h2><p>{record.protocol} · BNB Chain</p></div><span className="evidence-state pending">INDEXING PENDING</span></header>
+      <ComparisonBlock title="Best for"><p>{record.bestFor}</p></ComparisonBlock>
+      <ComparisonBlock title="What it observes"><p>{record.observes}</p><small>Supported input: {record.supportedInput}</small></ComparisonBlock>
+      <ComparisonBlock title="Live evidence"><Status state={record.onchainEvidence.state} /><p>{record.onchainEvidence.detail}</p><small>{record.categoryEvidence}</small><small>Source: {record.evidenceSource}</small></ComparisonBlock>
+      <ComparisonBlock title="Evidence freshness"><Status state="AVAILABLE" /><p>{record.evidenceFreshness}</p></ComparisonBlock>
+      <ComparisonBlock title="Evidence coverage"><strong className="coverage-count">{record.coverage.available} of {record.coverage.total} signals available</strong><ul className="signal-list"><Signal label="ERC-8004 identity" available={record.signals.erc8004Identity} /><Signal label="Documentation" available={record.signals.documentation} /><Signal label="Health endpoint" available={record.signals.healthEndpoint} suffix="not checked here" /><Signal label="Read-only assessment" available={record.signals.liveAssessment} /><Signal label="On-chain evidence" available={record.signals.onchainEvidence} /><Signal label="Pinned-block provenance" available={record.signals.pinnedBlock} /><Signal label="External cross-check" available={record.signals.externalCrossCheck} /><Signal label="Indexed reputation" available={record.signals.indexedReputation} /></ul></ComparisonBlock>
+      <ComparisonBlock title="Activation / test mode"><Status state="AVAILABLE" /><p>{record.activationMode}</p></ComparisonBlock>
+      <ComparisonBlock title="Safety boundary"><dl className="safety-facts"><div><dt>Read-only</dt><dd>Yes</dd></div><div><dt>Wallet required</dt><dd>{yesNo(record.safety.walletRequired)}</dd></div><div><dt>Signature required</dt><dd>{yesNo(record.safety.signatureRequired)}</dd></div><div><dt>Transaction capability</dt><dd>{yesNo(record.safety.transactionCapability)}</dd></div><div><dt>Fund movement</dt><dd>{yesNo(record.safety.fundMovement)}</dd></div><div><dt>Custody</dt><dd>{record.safety.custody}</dd></div></dl></ComparisonBlock>
+      <ComparisonBlock title="Known limitations"><p>{record.limitation}</p><p><strong>Unsupported:</strong> {record.unsupportedAction}</p></ComparisonBlock>
+      <ComparisonBlock title="Unknown / unavailable evidence"><Status state="UNAVAILABLE" /><ul>{record.missingEvidence.map((item) => <li key={item}>{item}</li>)}</ul></ComparisonBlock>
+      <ComparisonBlock title="ERC-8004 provenance"><dl className="identity-facts"><div><dt>Token ID</dt><dd>{record.agent.tokenId}</dd></div><div><dt>Identity</dt><dd>{record.agent.agentId}</dd></div><div><dt>Source</dt><dd>Public registration JSON</dd></div><div><dt>Registration</dt><dd>Declared · 8004scan indexing pending</dd></div></dl></ComparisonBlock>
+      <footer><Link href={`/live-agents/56/${record.agent.tokenId}`} className="primary-button">Run read-only assessment <ArrowIcon /></Link><Link href={record.agent.registrationUrl} target="_blank" rel="noreferrer" className="secondary-button">View source evidence</Link></footer>
+    </article>)}</section>
+    <div className="comparison-close"><strong>No recommendation is made.</strong><p>Open a profile to review the exact inputs, current evidence response, and limitations before running its bounded assessment.</p><Link href="/live-agents" className="secondary-button">Change selected agents</Link></div>
   </div>;
 }
 
-function CompareRow({ label, values }: { label: string; values: string[] }) {
-  return <div className="live-compare-row"><div>{label}</div>{values.map((value, index) => <div key={`${label}-${index}`}>{value}</div>)}</div>;
-}
+function ComparisonBlock({ title, children }: { title: string; children: React.ReactNode }) { return <section className="comparison-block"><h3>{title}</h3>{children}</section>; }
+function Status({ state }: { state: ComparisonEvidenceState }) { return <span className={`evidence-state ${state.toLowerCase().replaceAll(" ", "-")}`}>{state}</span>; }
+function Signal({ label, available, suffix }: { label: string; available: boolean; suffix?: string }) { return <li>{label} · {available ? "Available" : "Unavailable"}{available && suffix ? `, ${suffix}` : ""}</li>; }

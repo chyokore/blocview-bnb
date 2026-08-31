@@ -1,95 +1,60 @@
-import type { LiveAgent } from "./8004scan";
-import { deriveEvidenceRecord, type EvidenceRecord } from "./evidence.ts";
+import type { RangePilotLiveAgent } from "./range-pilot-watch-agents.ts";
+import { listRangePilotLiveAgents } from "./range-pilot-watch-agents.ts";
 
-export type ComparisonCriterion = "capability-match" | "evidence-coverage" | "retrieval-freshness" | "reputation-availability";
+export const LIVE_COMPARISON_MIN = 2;
+export const LIVE_COMPARISON_MAX = 4;
+export type ComparisonEvidenceState = "VERIFIED" | "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT APPLICABLE" | "INDEXING PENDING";
+export type EvidenceSignal = "erc8004Identity" | "documentation" | "healthEndpoint" | "liveAssessment" | "onchainEvidence" | "pinnedBlock" | "externalCrossCheck" | "indexedReputation";
 
-export type ComparedRecord = {
-  agent: LiveAgent;
-  evidence: EvidenceRecord;
-  score: number;
-  matchedRequirements: string[];
-  unmatchedRequirements: string[];
-  weightedReasons: Array<{ criterion: ComparisonCriterion; points: number; explanation: string }>;
-  disqualifiers: string[];
-  unknowns: string[];
+export type LiveAgentComparisonRecord = {
+  agent: RangePilotLiveAgent;
+  bestFor: string;
+  observes: string;
+  supportedInput: string;
+  activationMode: string;
+  protocol: string;
+  evidenceSource: string;
+  evidenceFreshness: string;
+  onchainEvidence: { state: ComparisonEvidenceState; detail: string };
+  categoryEvidence: string;
+  safety: { readOnly: true; walletRequired: false; signatureRequired: false; transactionCapability: false; custody: string; fundMovement: false; externalExecution: false };
+  limitation: string;
+  unsupportedAction: string;
+  missingEvidence: string[];
+  signals: Record<EvidenceSignal, boolean>;
+  coverage: { available: number; total: number };
 };
 
-export type LiveComparisonResult = {
-  requirements: string[];
-  records: [ComparedRecord, ComparedRecord];
-  outcome: "recommended" | "no-clear-best-fit";
-  recommendedAgentId?: string;
-  headline: string;
-  runnerUpExplanation: string;
-  decisionSupportNotice: string;
+type Detail = Omit<LiveAgentComparisonRecord, "agent" | "coverage">;
+const sharedSafety = { readOnly: true, walletRequired: false, signatureRequired: false, transactionCapability: false, custody: "Not established by the registration evidence", fundMovement: false, externalExecution: false } as const;
+const sharedMissing = ["8004scan reputation and activity evidence", "Independent validation or audit evidence", "Permission, custody, and operating-control evidence"];
+const sharedSignals = { erc8004Identity: true, documentation: true, healthEndpoint: true, liveAssessment: true, onchainEvidence: false, pinnedBlock: false, externalCrossCheck: false, indexedReputation: false } as const;
+
+const details: Record<number, Detail> = {
+  321941: {
+    bestFor: "Checking whether a declared PancakeSwap V3 LP position is currently in range.", observes: "Position-range state for a caller-supplied LP NFT token ID.", supportedInput: "A PancakeSwap V3 position token ID.", activationMode: "Bounded external read-only assessment", protocol: "PancakeSwap V3", evidenceSource: "RangePilotWatch registration, documentation, health, and assessment endpoints", evidenceFreshness: "Health and assessment are checked only when opened or run; no comparison-page snapshot is claimed.", onchainEvidence: { state: "PARTIAL", detail: "The external assessment declares read-only position evidence; BLOCview does not independently pin or verify it here." }, categoryEvidence: "LP-position range observation", safety: sharedSafety, limitation: "A point-in-time range check is not continuous monitoring and does not establish performance.", unsupportedAction: "Does not rebalance, approve, add, remove, or move liquidity.", missingEvidence: sharedMissing, signals: { ...sharedSignals },
+  },
+  321995: {
+    bestFor: "Placing a verified PancakeSwap V3 pool tick within caller-declared grid boundaries.", observes: "Live point-in-time WBNB/USDT pool state and grid placement.", supportedInput: "Allowlisted WBNB-USDT-500 pool plus strictly increasing tick boundaries.", activationMode: "Bounded BLOCview read-only assessment", protocol: "PancakeSwap V3", evidenceSource: "First-party BLOCview BSC read with RangePilotWatch cross-check", evidenceFreshness: "Pinned-block point-in-time evidence is created only when an assessment is run.", onchainEvidence: { state: "VERIFIED", detail: "First-party BLOCview verification of the allowlisted pool identity and pinned-block state; RangePilotWatch is a secondary cross-check." }, categoryEvidence: "Pool tick, liquidity, block timestamp, grid placement, and external consistency state", safety: sharedSafety, limitation: "Pool state changes after the pinned block, and caller-supplied grid boundaries are not a strategy recommendation.", unsupportedAction: "Does not create orders, trade, swap, rebalance, or execute a grid strategy.", missingEvidence: sharedMissing, signals: { ...sharedSignals, onchainEvidence: true, pinnedBlock: true, externalCrossCheck: true },
+  },
+  322046: {
+    bestFor: "Comparing displayed supply-rate evidence across two allowlisted Venus stablecoin markets.", observes: "Stored values and displayed supply rates for allowlisted Venus markets.", supportedInput: "usd-stablecoins with one or both allowlisted core-vUSDC and core-vUSDT markets.", activationMode: "Bounded external read-only assessment", protocol: "Venus Protocol", evidenceSource: "RangePilotWatch registration, documentation, health, and assessment endpoints", evidenceFreshness: "Health and assessment are checked only when opened or run; no comparison-page snapshot is claimed.", onchainEvidence: { state: "PARTIAL", detail: "The external assessment declares read-only Venus market evidence; BLOCview does not independently pin or verify it here." }, categoryEvidence: "Allowlisted market supply-rate comparison", safety: sharedSafety, limitation: "Displayed rates can change and do not establish realised yield, suitability, or future returns.", unsupportedAction: "Does not allocate, supply, withdraw, or recommend funds.", missingEvidence: sharedMissing, signals: { ...sharedSignals },
+  },
+  322090: {
+    bestFor: "Checking a caller-supplied Venus account's current borrow-buffer condition.", observes: "Point-in-time Venus account-liquidity evidence against a caller-set warning ratio.", supportedInput: "A public BSC account address and warning ratio from 1.00 to 3.00.", activationMode: "Bounded external read-only assessment", protocol: "Venus Protocol", evidenceSource: "RangePilotWatch registration, documentation, health, and assessment endpoints", evidenceFreshness: "Health and assessment are checked only when opened or run; no comparison-page snapshot is claimed.", onchainEvidence: { state: "PARTIAL", detail: "The external assessment declares read-only account-liquidity evidence; BLOCview does not independently pin or verify it here." }, categoryEvidence: "Account-liquidity and caller-defined warning-buffer observation", safety: sharedSafety, limitation: "A single assessment is not continuous monitoring or a liquidation prediction.", unsupportedAction: "Does not repay, borrow, supply, withdraw, liquidate, or move funds.", missingEvidence: sharedMissing, signals: { ...sharedSignals },
+  },
 };
 
-export function parseRequirements(input: string | string[]): string[] {
-  const values = Array.isArray(input) ? input : input.split(",");
-  return [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))].slice(0, 8);
+export function normalizeComparisonIds(input: string | string[] | undefined): number[] {
+  const values = Array.isArray(input) ? input : (input ?? "").split(",");
+  const allowed = new Set(listRangePilotLiveAgents().map((agent) => agent.tokenId));
+  return [...new Set(values.map((value) => Number(String(value).trim())).filter((value) => Number.isSafeInteger(value) && allowed.has(value)))].slice(0, LIVE_COMPARISON_MAX);
 }
 
-function capabilityMatches(requirement: string, capabilities: string[]) {
-  return capabilities.some((capability) => {
-    const normalized = capability.trim().toLowerCase();
-    return normalized === requirement || normalized.includes(requirement) || requirement.includes(normalized);
+export function buildLiveComparison(ids: number[], now = new Date()): LiveAgentComparisonRecord[] {
+  const selected = new Set(normalizeComparisonIds(ids.map(String)));
+  return listRangePilotLiveAgents(now).filter((agent) => selected.has(agent.tokenId)).map((agent) => {
+    const detail = details[agent.tokenId];
+    return { agent, ...detail, coverage: { available: Object.values(detail.signals).filter(Boolean).length, total: Object.keys(detail.signals).length } };
   });
-}
-
-function freshnessPoints(freshness: EvidenceRecord["retrieval"]["freshness"]) {
-  if (freshness === "Fresh") return 2;
-  if (freshness === "Recent") return 1;
-  return 0;
-}
-
-function compareRecord(agent: LiveAgent, requirements: string[], now: Date): ComparedRecord {
-  const evidence = deriveEvidenceRecord(agent, now);
-  const matchedRequirements = requirements.filter((requirement) => capabilityMatches(requirement, evidence.declaredCapabilities));
-  const unmatchedRequirements = requirements.filter((requirement) => !matchedRequirements.includes(requirement));
-  const capabilityPoints = matchedRequirements.length * 4;
-  const coveragePoints = evidence.coverage.available;
-  const retrievalPoints = freshnessPoints(evidence.retrieval.freshness);
-  const reputationPoints = evidence.reputation ? 1 : 0;
-  const disqualifiers: string[] = [];
-  if (requirements.length && matchedRequirements.length === 0) disqualifiers.push("No declared capability matches the stated requirements.");
-  if (!evidence.declaredCapabilities.length) disqualifiers.push("No declared capabilities are available from this record.");
-  if (evidence.retrieval.freshness === "Stale") disqualifiers.push("The registry record is stale under BLOCview's retrieval-age rule.");
-  if (evidence.retrieval.freshness === "Unknown") disqualifiers.push("Retrieval freshness cannot be classified.");
-  return {
-    agent,
-    evidence,
-    score: capabilityPoints + coveragePoints + retrievalPoints + reputationPoints,
-    matchedRequirements,
-    unmatchedRequirements,
-    weightedReasons: [
-      { criterion: "capability-match", points: capabilityPoints, explanation: `${matchedRequirements.length} of ${requirements.length} stated requirements match declared capability labels (4 points each).` },
-      { criterion: "evidence-coverage", points: coveragePoints, explanation: `${evidence.coverage.available} of ${evidence.coverage.total} evidence areas are covered (1 point each).` },
-      { criterion: "retrieval-freshness", points: retrievalPoints, explanation: `${evidence.retrieval.freshness} retrieval classification (${retrievalPoints} points).` },
-      { criterion: "reputation-availability", points: reputationPoints, explanation: evidence.reputation ? "Reputation fields were returned by the source (1 point; not independently validated)." : "No reputation fields were returned (0 points)." },
-    ],
-    disqualifiers,
-    unknowns: evidence.missingEvidence,
-  };
-}
-
-export function compareLiveAgents(left: LiveAgent, right: LiveAgent, requirementInput: string | string[], now = new Date()): LiveComparisonResult {
-  const requirements = parseRequirements(requirementInput);
-  const records: [ComparedRecord, ComparedRecord] = [compareRecord(left, requirements, now), compareRecord(right, requirements, now)];
-  const [first, second] = records;
-  const difference = Math.abs(first.score - second.score);
-  const noCapabilitySignal = requirements.length > 0 && first.matchedRequirements.length === 0 && second.matchedRequirements.length === 0;
-  const inconclusive = requirements.length === 0 || difference < 2 || noCapabilitySignal;
-  const winner = first.score > second.score ? first : second;
-  const runnerUp = winner === first ? second : first;
-  return {
-    requirements,
-    records,
-    outcome: inconclusive ? "no-clear-best-fit" : "recommended",
-    recommendedAgentId: inconclusive ? undefined : winner.agent.agentId,
-    headline: inconclusive ? "No clear best fit" : `${winner.agent.name ?? `ERC-8004 #${winner.agent.tokenId}`} is the better-evidenced fit for these stated requirements`,
-    runnerUpExplanation: inconclusive
-      ? `The records are within ${difference} weighted point${difference === 1 ? "" : "s"}, or neither matches a stated capability requirement. The available evidence does not support a clear preference.`
-      : `${runnerUp.agent.name ?? `ERC-8004 #${runnerUp.agent.tokenId}`} is the runner-up with ${runnerUp.score} points versus ${winner.score}; review its unmatched requirements and evidence gaps before deciding.`,
-    decisionSupportNotice: "This deterministic comparison is decision support only—not verification, endorsement, investment advice, or evidence of reliability, safety, performance, activity, or permission controls.",
-  };
 }

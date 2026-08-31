@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { deriveEvidenceRecord, resolveRetrievalTimestamp } from "../lib/evidence.ts";
-import { compareLiveAgents } from "../lib/live-comparison.ts";
+import { buildLiveComparison, normalizeComparisonIds } from "../lib/live-comparison.ts";
 import {
   fetchRangePilotWatchProof,
   FLAGSHIP_PROOF_REQUEST,
@@ -193,59 +193,54 @@ test("discloses missing evidence and labels a local timestamp fallback", () => {
   assert.ok(evidence.missingEvidence.some((reason) => reason.includes("No score, stars, or feedback count")));
 });
 
-test("deterministically prioritises declared capability matches", () => {
-  const left = liveAgent({ agentId: "56:42", tokenId: 42, name: "Trading Record", capabilities: ["grid trading", "market data"] });
-  const right = liveAgent({ agentId: "56:43", tokenId: 43, name: "Storage Record", capabilities: ["data storage"] });
-  const result = compareLiveAgents(left, right, "grid trading", new Date("2026-08-31T10:05:00.000Z"));
-
-  assert.equal(result.outcome, "recommended");
-  assert.equal(result.recommendedAgentId, "56:42");
-  assert.deepEqual(result.records[0].matchedRequirements, ["grid trading"]);
-  assert.equal(result.records[0].weightedReasons.find((reason) => reason.criterion === "capability-match")?.points, 4);
+test("normalizes shareable live-only comparison IDs", () => {
+  assert.deepEqual(normalizeComparisonIds("321995,321941,321995,range-pilot,999999,322046,322090,321995"), [321995, 321941, 322046, 322090]);
+  assert.deepEqual(normalizeComparisonIds("range-pilot,grid-sentinel"), []);
 });
 
-test("returns no clear best fit for a tie or absent capability signal", () => {
-  const left = liveAgent({ agentId: "56:42", tokenId: 42, capabilities: ["analytics"] });
-  const right = liveAgent({ agentId: "56:43", tokenId: 43, capabilities: ["analytics"] });
-  const tied = compareLiveAgents(left, right, "analytics", new Date("2026-08-31T10:05:00.000Z"));
-  const noSignal = compareLiveAgents(left, right, "trading", new Date("2026-08-31T10:05:00.000Z"));
-
-  assert.equal(tied.outcome, "no-clear-best-fit");
-  assert.equal(tied.recommendedAgentId, undefined);
-  assert.equal(noSignal.outcome, "no-clear-best-fit");
-  assert.match(noSignal.runnerUpExplanation, /neither matches/i);
+test("builds canonical two-agent and four-agent comparisons without counting unavailable signals", () => {
+  const two = buildLiveComparison([321941, 321995], new Date("2026-08-31T10:05:00.000Z"));
+  const four = buildLiveComparison([321941, 321995, 322046, 322090], new Date("2026-08-31T10:05:00.000Z"));
+  assert.deepEqual(two.map((record) => record.agent.name), ["RangeRebalance Lens", "GridBand Observer"]);
+  assert.equal(four.length, 4);
+  assert.deepEqual(four.map((record) => record.agent.tokenId), [321941, 321995, 322046, 322090]);
+  assert.equal(two[0].coverage.available, 4);
+  assert.equal(two[1].coverage.available, 7);
+  assert.equal(two[0].signals.indexedReputation, false);
+  assert.ok(two.every((record) => record.missingEvidence.some((item) => item.includes("reputation"))));
 });
 
-test("surfaces missing evidence and stale-record disqualifiers", () => {
-  const stale = liveAgent({ agentId: "56:42", tokenId: 42, capabilities: [], reputation: undefined, retrievedAt: "2026-08-30T00:00:00.000Z" });
-  const fresh = liveAgent({ agentId: "56:43", tokenId: 43, capabilities: ["monitoring"], retrievedAt: "2026-08-31T10:00:00.000Z" });
-  const result = compareLiveAgents(stale, fresh, "monitoring", new Date("2026-08-31T10:05:00.000Z"));
-
-  assert.equal(result.recommendedAgentId, "56:43");
-  assert.ok(result.records[0].disqualifiers.some((item) => item.includes("stale")));
-  assert.ok(result.records[0].disqualifiers.some((item) => item.includes("No declared capabilities")));
-  assert.ok(result.records[0].unknowns.some((item) => item.includes("No score, stars, or feedback count")));
-});
-
-test("keeps live comparison separate from demo and execution flows", async () => {
-  const [route, component, model, list, response] = await Promise.all([
-    readFile(new URL("../app/live-agents/compare/page.tsx", import.meta.url), "utf8"),
+test("keeps comparison truthful, live-only, actionable, and free of execution controls", async () => {
+  const [route, component, model, list, response, fourResponse] = await Promise.all([
+    readFile(new URL("../app/compare/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/LiveAgentComparison.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/live-comparison.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/LiveAgentList.tsx", import.meta.url), "utf8"),
-    render("/live-agents/compare"),
+    render("/compare?agents=321995,321941"),
+    render("/compare?agents=321941,321995,322046,322090"),
   ]);
   const liveComparisonSource = `${route}\n${component}\n${model}`;
-  const html = await response.text();
+  const [html, fourHtml] = await Promise.all([response.text(), fourResponse.text()]);
 
   assert.doesNotMatch(liveComparisonSource, /from ["']@\/data\/agents|ActivationModal|return30d|30-day return|APY|TVL/i);
-  assert.doesNotMatch(liveComparisonSource, /connect wallet|sign transaction|activate agent/i);
-  assert.match(component, /Demo strategies and illustrative metrics are excluded/);
-  assert.match(route, /No demo data was substituted/);
-  assert.match(list, /selected\.length >= 2/);
-  assert.match(list, /\/live-agents\/compare/);
-  assert.match(html, /Select two different live registry records/);
-  assert.match(html, /Demo strategies cannot be added to this comparison/);
+  assert.doesNotMatch(liveComparisonSource, /Highly Trusted|Low Risk|Safe Agent|guaranteed profit|best performing|\d+\s*\/\s*100/i);
+  assert.doesNotMatch(liveComparisonSource, /Connect wallet|Sign transaction|Send transaction|Pay now|Execute strategy/i);
+  assert.match(component, /Evidence coverage is not a trust score/);
+  assert.match(component, /Run read-only assessment/);
+  assert.match(liveComparisonSource, /First-party BLOCview verification of the allowlisted pool identity and pinned-block state/);
+  assert.match(list, /selected\.length >= 4/);
+  assert.match(list, /pathname: "\/compare"/);
+  for (const name of ["RangeRebalance Lens", "GridBand Observer"]) assert.match(html, new RegExp(name));
+  for (const name of ["RangeRebalance Lens", "GridBand Observer", "Venus Yield Lens", "Venus Borrow Buffer Watch"]) assert.match(fourHtml, new RegExp(name));
+  assert.match(html, /Unknown \/ unavailable evidence/);
+  assert.doesNotMatch(html, /Range Pilot|Grid Sentinel|Yield Navigator|Health Guard/);
+});
+
+test("invalid, duplicate, over-limit, and demo IDs render safely", async () => {
+  const invalid = await (await render("/compare?agents=range-pilot,999999")).text();
+  const normalized = buildLiveComparison(normalizeComparisonIds("321941,321941,321995,322046,322090,999999"));
+  assert.match(invalid, /Select 2–4 live agents/);
+  assert.equal(normalized.length, 4);
 });
 
 test("rendered pages preserve provenance and no-action safety messaging", async () => {
@@ -411,15 +406,9 @@ test("enforces the fixed service boundary and rejects arbitrary request fields",
 
 test("does not fabricate registry linkage or change readiness and comparison semantics", () => {
   assert.equal(resolveRangePilotWatchRegistryMapping([liveAgent({ name: "Range Pilot Watch" })]), null);
-  const before = compareLiveAgents(
-    liveAgent({ agentId: "56:42", tokenId: 42, capabilities: ["monitoring"] }),
-    liveAgent({ agentId: "56:43", tokenId: 43, capabilities: ["storage"] }),
-    "monitoring",
-    new Date("2026-08-31T10:05:00.000Z"),
-  );
-  assert.equal(before.records[0].score, 10);
-  assert.equal(before.records[1].score, 6);
-  assert.equal(before.recommendedAgentId, "56:42");
+  const comparison = buildLiveComparison([321995, 322046], new Date("2026-08-31T10:05:00.000Z"));
+  assert.deepEqual(comparison.map((record) => record.agent.tokenId), [321995, 322046]);
+  assert.ok(comparison.every((record) => record.agent.source === "range-pilot-watch"));
 });
 
 test("flagship UI is standalone, has no demo fallback, and introduces no action controls or unsupported claims", async () => {

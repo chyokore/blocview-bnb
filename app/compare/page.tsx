@@ -1,5 +1,17 @@
-import { CompareAgents } from "@/components/CompareAgents";
+import type { Metadata } from "next";
+import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { LiveAgentComparison } from "@/components/LiveAgentComparison";
+import { buildLiveComparison, LIVE_COMPARISON_MIN, normalizeComparisonIds } from "@/lib/live-comparison";
 
-export default function ComparePage() { return <main><Header /><CompareAgents /><Footer /></main>; }
+export const metadata: Metadata = { title: "Compare live BSC agents", description: "Compare capability, evidence, freshness, safety boundaries, and unknowns across registered BSC agents." };
+
+export default async function ComparePage({ searchParams }: { searchParams: Promise<{ agents?: string | string[] }> }) {
+  const ids = normalizeComparisonIds((await searchParams).agents);
+  const records = buildLiveComparison(ids);
+  if (records.length < LIVE_COMPARISON_MIN) return <ComparisonState />;
+  return <main><Header /><div className="compare-wrap"><LiveAgentComparison records={records} /></div><Footer /></main>;
+}
+
+function ComparisonState() { return <main><Header /><div className="live-shell"><div className="empty-state live-state"><span className="eyebrow">Live comparison</span><h1>Select 2–4 live agents</h1><p>Only the four first-party registered BSC agents can enter this evidence comparison. Invalid, duplicate, and demo IDs are excluded.</p><Link href="/live-agents" className="primary-button">Choose live agents</Link></div></div><Footer /></main>; }
