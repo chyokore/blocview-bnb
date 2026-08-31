@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandMark } from "./BrandMark";
 
 export function Header() {
   const pathname = usePathname();
@@ -15,7 +16,7 @@ export function Header() {
   return (
     <header className="site-header">
       <Link href="/" className="logo" aria-label="BLOCview home">
-        <span className="logo-mark"><i /><i /><i /></span>
+        <BrandMark />
         <span>BLOC<span>view</span></span>
       </Link>
       <nav aria-label="Primary navigation">
@@ -23,7 +24,7 @@ export function Header() {
           <Link key={label} href={href} className={(href === "/" ? pathname === "/" : pathname.startsWith(href.split("#")[0])) ? "active" : ""}>{label}</Link>
         ))}
       </nav>
-      <Link href="/find-your-fit" className="header-cta">Find your fit <span>→</span></Link>
+      <Link href="/live-agents" className="header-cta">Explore live agents <span>→</span></Link>
     </header>
   );
 }
