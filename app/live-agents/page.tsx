@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
+import { FlagshipLiveProof } from "@/components/FlagshipLiveProof";
 import { Header } from "@/components/Header";
 import { LiveAgentList } from "@/components/LiveAgentList";
 import { listLiveAgents } from "@/lib/8004scan";
@@ -23,6 +24,7 @@ export default async function LiveAgentsPage({ searchParams }: { searchParams: P
   </>;
   return <main><Header /><div className="live-shell">
     <header className="live-heading"><span className="eyebrow">8004scan discovery</span><h1>Live BNB agents</h1><p>Real ERC-8004 registry records returned by 8004scan, kept separate from BLOCview&apos;s illustrative strategies.</p><div className="source-badge verified">8004scan registry records</div></header>
+    <FlagshipLiveProof />
     {content}
   </div><Footer /></main>;
 }
