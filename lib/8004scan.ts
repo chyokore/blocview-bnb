@@ -13,8 +13,8 @@ type ApiResponse<T> = { success?: boolean; data?: T; meta?: ApiMeta };
 type ScanAgent = {
   id?: string;
   agent_id?: string;
-  token_id?: number;
-  chain_id?: number;
+  token_id?: number | string;
+  chain_id?: number | string;
   name?: string;
   description?: string;
   owner_address?: string;
@@ -85,14 +85,23 @@ function isFiniteInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
+function parseIdentifier(value: unknown): number | null {
+  if (isFiniteInteger(value)) return value;
+  if (typeof value !== "string" || !/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return isFiniteInteger(parsed) ? parsed : null;
+}
+
 function mapLiveAgent(record: ScanAgent, retrieval: ReturnType<typeof resolveRetrievalTimestamp>): LiveAgent | null {
-  if (record.chain_id !== BNB_CHAIN_ID || !isFiniteInteger(record.token_id)) return null;
+  const chainId = parseIdentifier(record.chain_id);
+  const tokenId = parseIdentifier(record.token_id);
+  if (chainId !== BNB_CHAIN_ID || tokenId === null) return null;
   return {
     source: "8004scan",
     chainId: BNB_CHAIN_ID,
     network: "BNB Chain",
-    tokenId: record.token_id,
-    agentId: typeof record.agent_id === "string" && record.agent_id.trim() ? record.agent_id : `${BNB_CHAIN_ID}:${record.token_id}`,
+    tokenId,
+    agentId: typeof record.agent_id === "string" && record.agent_id.trim() ? record.agent_id : `${BNB_CHAIN_ID}:${tokenId}`,
     name: typeof record.name === "string" && record.name.trim() ? record.name.trim() : undefined,
     description: typeof record.description === "string" && record.description.trim() ? record.description.trim() : undefined,
     capabilities: Array.isArray(record.supported_protocols) ? record.supported_protocols.filter((item): item is string => typeof item === "string" && Boolean(item.trim())) : [],
@@ -152,10 +161,11 @@ export async function getVerifiedAgent(agent: Agent): Promise<VerifiedAgentData 
   const query = new URLSearchParams({ q: agent.name, chainId: String(BNB_CHAIN_ID), limit: "10" });
   const search = await request<ScanAgent[]>(`/agents/search?${query}`);
   const match = search?.data?.find((candidate) => candidate.chain_id === BNB_CHAIN_ID && candidate.name?.trim().toLowerCase() === agent.name.toLowerCase());
-  if (!isFiniteInteger(match?.token_id) || !match?.name) return null;
+  const tokenId = parseIdentifier(match?.token_id);
+  if (tokenId === null || !match?.name) return null;
   const [detail, feedbacks] = await Promise.all([
-    request<ScanAgent>(`/agents/${BNB_CHAIN_ID}/${match.token_id}`),
-    request<ScanFeedback[]>(`/feedbacks?chainId=${BNB_CHAIN_ID}&tokenId=${match.token_id}&limit=5`),
+    request<ScanAgent>(`/agents/${BNB_CHAIN_ID}/${tokenId}`),
+    request<ScanFeedback[]>(`/feedbacks?chainId=${BNB_CHAIN_ID}&tokenId=${tokenId}&limit=5`),
   ]);
   const record = detail?.data ?? match;
   const live = mapLiveAgent(record, resolveRetrievalTimestamp(detail?.meta?.timestamp ?? search?.meta?.timestamp));
@@ -164,6 +174,6 @@ export async function getVerifiedAgent(agent: Agent): Promise<VerifiedAgentData 
     ...live,
     name: live.name,
     ownerAddress: record.owner_address,
-    feedback: (feedbacks?.data ?? []).map((item, index) => ({ id: item.id ?? `${match.token_id}-${index}`, score: item.score, comment: item.comment, createdAt: item.created_at })),
+    feedback: (feedbacks?.data ?? []).map((item, index) => ({ id: item.id ?? `${tokenId}-${index}`, score: item.score, comment: item.comment, createdAt: item.created_at })),
   };
 }

@@ -11,7 +11,7 @@ import {
   validateRangePilotWatchResponse,
 } from "../lib/range-pilot-watch.ts";
 import { composeFlagshipProof, resolveRangePilotWatchRegistryMapping } from "../lib/flagship-proof.ts";
-import { listRangePilotLiveAgents, RANGE_PILOT_REGISTRY } from "../lib/range-pilot-watch-agents.ts";
+import { listRangePilotLiveAgents, mergeRangePilotIndexedAgent, RANGE_PILOT_REGISTRY } from "../lib/range-pilot-watch-agents.ts";
 import { ASSESSMENT_ENDPOINTS, validateAssessmentRequest } from "../lib/range-pilot-assessments.ts";
 import { composeGridBandReceipt, crossCheckGridBand, placeTick } from "../lib/gridband-evidence.ts";
 import { decodeSignedInt24Word, decodeSlot0, PANCAKESWAP_V3_POOL_ALLOWLIST, readPancakeSwapV3PoolEvidence } from "../lib/pancakeswap-v3.ts";
@@ -285,7 +285,7 @@ test("rendered pages preserve provenance and no-action safety messaging", async 
   assert.match(live, /Demo strategies remain available and clearly labelled|No demo records are shown in its place/i);
 });
 
-test("surfaces exactly four RangePilotWatch categories with indexing pending", async () => {
+test("surfaces exactly four RangePilotWatch categories and truthfully falls back when indexing cannot be checked", async () => {
   const agents = listRangePilotLiveAgents(new Date("2026-08-31T10:00:00.000Z"));
   assert.equal(agents.length, 4);
   assert.deepEqual(agents.map((agent) => agent.tokenId), [321941, 321995, 322046, 322090]);
@@ -302,8 +302,8 @@ test("surfaces exactly four RangePilotWatch categories with indexing pending", a
   const response = await render("/live-agents");
   const html = await response.text();
   assert.match(html, /RangePilotWatch agents/);
-  assert.match(html, /8004scan status:[\s\S]*indexing pending/i);
-  assert.match(html, /Not indexed or rated by 8004scan/i);
+  assert.match(html, /8004scan indexing confirmed for[\s\S]*0[\s\S]*of 4/i);
+  assert.match(html, /Some indexing evidence unavailable/i);
   for (const agent of agents) assert.match(html, new RegExp(agent.name));
 });
 
@@ -509,12 +509,35 @@ test("pending first-party source contains exactly the four verified identities a
   assert.ok(agents.every((agent) => agent.documentationUrl && agent.healthUrl.endsWith("/health") && agent.assessmentUrl.endsWith("/assess")));
 });
 
+test("an exact indexed record enriches its canonical first-party agent without replacing assessment controls", () => {
+  const registration = listRangePilotLiveAgents(new Date("2026-08-31T12:00:00.000Z"))[1];
+  const indexed = liveAgent({
+    tokenId: 321995,
+    agentId: "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:321995",
+    name: "GridBand Observer",
+    capabilities: ["Web"],
+    reputation: { score: 0, stars: 0, feedbackCount: 0 },
+  });
+  const merged = mergeRangePilotIndexedAgent(registration, indexed);
+  assert.equal(merged.source, "8004scan");
+  assert.equal(merged.indexingStatus, undefined);
+  assert.equal(merged.assessmentUrl, registration.assessmentUrl);
+  assert.equal(merged.registrationUrl, registration.registrationUrl);
+  assert.equal(merged.category, "Grid Trading");
+  assert.equal(merged.agentId, indexed.agentId);
+
+  const [comparison] = buildLiveComparison([321995], new Date("2026-08-31T12:00:00.000Z"), [merged]);
+  assert.equal(comparison.signals.indexedReputation, true);
+  assert.equal(comparison.coverage.available, 8);
+  assert.ok(!comparison.missingEvidence.some((item) => item.startsWith("8004scan reputation")));
+});
+
 test("pending agents render separately with truthful indexing and activation boundaries", async () => {
   const [listResponse, detailResponse] = await Promise.all([render("/live-agents"), render("/live-agents/56/321941")]);
   const [list, detail] = await Promise.all([listResponse.text(), detailResponse.text()]);
   for (const name of ["RangeRebalance Lens", "GridBand Observer", "Venus Yield Lens", "Venus Borrow Buffer Watch"]) assert.match(list, new RegExp(name));
-  assert.match(list, /8004scan status:[\s\S]*indexing pending/i);
-  assert.match(list, /not indexed or rated by 8004scan/i);
+  assert.match(list, /8004scan indexing confirmed for[\s\S]*0[\s\S]*of 4/i);
+  assert.match(list, /Some indexing evidence unavailable/i);
   assert.match(detail, /Public ERC-8004 registration JSON/i);
   assert.match(detail, /View documentation/);
   assert.match(detail, /Check health/);

@@ -51,10 +51,13 @@ export function normalizeComparisonIds(input: string | string[] | undefined): nu
   return [...new Set(values.map((value) => Number(String(value).trim())).filter((value) => Number.isSafeInteger(value) && allowed.has(value)))].slice(0, LIVE_COMPARISON_MAX);
 }
 
-export function buildLiveComparison(ids: number[], now = new Date()): LiveAgentComparisonRecord[] {
+export function buildLiveComparison(ids: number[], now = new Date(), agents: readonly RangePilotLiveAgent[] = listRangePilotLiveAgents(now)): LiveAgentComparisonRecord[] {
   const selected = new Set(normalizeComparisonIds(ids.map(String)));
-  return listRangePilotLiveAgents(now).filter((agent) => selected.has(agent.tokenId)).map((agent) => {
+  return agents.filter((agent) => selected.has(agent.tokenId)).map((agent) => {
     const detail = details[agent.tokenId];
-    return { agent, ...detail, coverage: { available: Object.values(detail.signals).filter(Boolean).length, total: Object.keys(detail.signals).length } };
+    const indexedReputation = agent.source === "8004scan" && (agent.reputation?.score !== undefined || agent.reputation?.stars !== undefined || agent.reputation?.feedbackCount !== undefined);
+    const signals = { ...detail.signals, indexedReputation };
+    const missingEvidence = indexedReputation ? detail.missingEvidence.filter((item) => !item.startsWith("8004scan reputation")) : detail.missingEvidence;
+    return { agent, ...detail, signals, missingEvidence, coverage: { available: Object.values(signals).filter(Boolean).length, total: Object.keys(signals).length } };
   });
 }

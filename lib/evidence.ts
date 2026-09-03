@@ -60,7 +60,7 @@ export function classifyFreshness(retrievedAt: string, now = new Date()): Pick<E
 }
 
 export function deriveEvidenceRecord(agent: LiveAgent, now = new Date()): EvidenceRecord {
-  const isPending = agent.source === "range-pilot-watch";
+  const isPending = agent.indexingStatus === "indexing pending";
   const hasReputation = agent.reputation?.score !== undefined || agent.reputation?.stars !== undefined || agent.reputation?.feedbackCount !== undefined;
   const areas: EvidenceArea[] = [
     { key: "identity", label: "Registry identity", state: "Available", basis: "Registry record", reason: isPending ? "The public registration JSON declares this token ID and BSC ERC-8004 registry identity; 8004scan indexing is pending." : "Chain ID, token ID, and agent ID were returned or normalized from the 8004scan response." },

@@ -4,7 +4,7 @@ export const RANGE_PILOT_REGISTRY = "eip155:56:0x8004A169FB4a3325136EB29fA0ceB6D
 
 export type RangePilotCategory = "Rebalancing" | "Grid Trading" | "Yield Optimisation" | "Health Factor Monitoring";
 export type RangePilotLiveAgent = LiveAgent & {
-  source: "range-pilot-watch";
+  source: "range-pilot-watch" | "8004scan";
   registry: typeof RANGE_PILOT_REGISTRY;
   category: RangePilotCategory;
   registrationUrl: string;
@@ -12,7 +12,7 @@ export type RangePilotLiveAgent = LiveAgent & {
   healthUrl: string;
   assessmentUrl: string;
   assessmentMode: "external-read-only-handoff";
-  indexingStatus: "indexing pending";
+  indexingStatus?: "indexing pending";
 };
 
 const origin = "https://range-pilot-watch.onrender.com";
@@ -55,5 +55,26 @@ export function getRangePilotLiveAgent(chainId: number, tokenId: number, now = n
 }
 
 export function isRangePilotLiveAgent(agent: LiveAgent): agent is RangePilotLiveAgent {
-  return agent.source === "range-pilot-watch";
+  return agent.registryAddress?.toLowerCase() === RANGE_PILOT_REGISTRY.split(":")[2].toLowerCase();
+}
+
+export function isRangePilotIndexingPending(agent: RangePilotLiveAgent) {
+  return agent.indexingStatus === "indexing pending";
+}
+
+export function mergeRangePilotIndexedAgent(registration: RangePilotLiveAgent, indexed: LiveAgent | null): RangePilotLiveAgent {
+  if (!indexed || indexed.chainId !== registration.chainId || indexed.tokenId !== registration.tokenId) return registration;
+  return {
+    ...registration,
+    ...indexed,
+    category: registration.category,
+    registry: registration.registry,
+    registryAddress: registration.registryAddress,
+    registrationUrl: registration.registrationUrl,
+    documentationUrl: registration.documentationUrl,
+    healthUrl: registration.healthUrl,
+    assessmentUrl: registration.assessmentUrl,
+    assessmentMode: registration.assessmentMode,
+    indexingStatus: undefined,
+  };
 }

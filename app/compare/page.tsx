@@ -4,12 +4,13 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { LiveAgentComparison } from "@/components/LiveAgentComparison";
 import { buildLiveComparison, LIVE_COMPARISON_MIN, normalizeComparisonIds } from "@/lib/live-comparison";
+import { resolveRangePilotLiveAgents } from "@/lib/range-pilot-indexing";
 
 export const metadata: Metadata = { title: "Compare live BSC agents", description: "Compare capability, evidence, freshness, safety boundaries, and unknowns across registered BSC agents." };
 
 export default async function ComparePage({ searchParams }: { searchParams: Promise<{ agents?: string | string[] }> }) {
   const ids = normalizeComparisonIds((await searchParams).agents);
-  const records = buildLiveComparison(ids);
+  const records = buildLiveComparison(ids, new Date(), await resolveRangePilotLiveAgents());
   if (records.length < LIVE_COMPARISON_MIN) return <ComparisonState />;
   return <main><Header /><div className="compare-wrap"><LiveAgentComparison records={records} /></div><Footer /></main>;
 }
