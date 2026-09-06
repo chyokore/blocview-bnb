@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { deriveEvidenceRecord, resolveRetrievalTimestamp } from "../lib/evidence.ts";
 import { buildLiveComparison, normalizeComparisonIds } from "../lib/live-comparison.ts";
+import { classifyMarketplaceAgent, countMarketplaceCategories, selectExternalMarketplaceAgents } from "../lib/live-marketplace.ts";
 import {
   fetchRangePilotWatchProof,
   FLAGSHIP_PROOF_REQUEST,
@@ -305,6 +306,40 @@ test("surfaces exactly four RangePilotWatch categories and truthfully falls back
   assert.match(html, /8004scan indexing confirmed for[\s\S]*0[\s\S]*of 4/i);
   assert.match(html, /Some indexing evidence unavailable/i);
   for (const agent of agents) assert.match(html, new RegExp(agent.name));
+});
+
+test("marketplace selection keeps classified external agents and excludes unknown, duplicate, and non-discovery records", () => {
+  const canonical = listRangePilotLiveAgents(new Date("2026-08-31T10:00:00.000Z"));
+  const classified = liveAgent({ tokenId: 900001, agentId: "56:900001", name: "External Grid Observer", capabilities: ["Grid Trading"] });
+  const unclassified = liveAgent({ tokenId: 900002, agentId: "56:900002", name: "Unknown External Agent", capabilities: ["Web"] });
+  const ambiguous = liveAgent({ tokenId: 900003, agentId: "56:900003", name: "Ambiguous External Agent", capabilities: ["Grid Trading", "Rebalancing"] });
+  const canonicalDuplicate = liveAgent({ tokenId: 321995, agentId: "56:321995", name: "Duplicate GridBand", capabilities: ["Grid Trading"] });
+  const demoRecord = liveAgent({ source: "range-pilot-watch", tokenId: 900004, agentId: "56:900004", name: "Demo Record", capabilities: ["Grid Trading"] });
+  const selected = selectExternalMarketplaceAgents([classified, unclassified, ambiguous, canonicalDuplicate, classified, demoRecord]);
+
+  assert.deepEqual(selected.map((agent) => agent.tokenId), [900001]);
+  assert.equal(selected[0].category, "Grid Trading");
+  assert.equal(classifyMarketplaceAgent(unclassified), null);
+  assert.equal(classifyMarketplaceAgent(ambiguous), null);
+  assert.deepEqual(canonical.map((agent) => agent.tokenId), [321941, 321995, 322046, 322090]);
+  assert.equal(new Set(canonical.map((agent) => agent.tokenId)).size, 4);
+  assert.deepEqual(canonical.map((agent) => agent.category), ["Rebalancing", "Grid Trading", "Yield Optimisation", "Health Factor Monitoring"]);
+
+  const counts = countMarketplaceCategories([...canonical, ...selected]);
+  assert.deepEqual(counts, { Rebalancing: 1, "Grid Trading": 2, "Yield Optimisation": 1, "Health Factor Monitoring": 1 });
+  assert.equal(Object.hasOwn(counts, "Unclassified"), false);
+});
+
+test("live marketplace filters generic discovery at presentation while profiles and canonical comparison remain intact", async () => {
+  const [page, profile] = await Promise.all([
+    readFile(new URL("../app/live-agents/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/live-agents/[chainId]/[tokenId]/page.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /selectExternalMarketplaceAgents\(result\.agents\)/);
+  assert.match(page, /<LiveAgentList agents=\{externalAgents\}/);
+  assert.doesNotMatch(page, /<LiveAgentList agents=\{result\.agents/);
+  assert.match(profile, /getLiveAgent\(chainId, tokenId\)/);
+  assert.deepEqual(normalizeComparisonIds(["321941", "321995", "900001"]), [321941, 321995]);
 });
 
 test("pending-agent activation remains an external read-only no-transaction handoff", async () => {

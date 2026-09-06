@@ -5,6 +5,7 @@ import { FlagshipLiveProof } from "@/components/FlagshipLiveProof";
 import { Header } from "@/components/Header";
 import { LiveAgentList } from "@/components/LiveAgentList";
 import { listLiveAgents } from "@/lib/8004scan";
+import { selectExternalMarketplaceAgents } from "@/lib/live-marketplace";
 import { resolveRangePilotLiveAgents } from "@/lib/range-pilot-indexing";
 
 export const metadata: Metadata = { title: "Live BNB agents", description: "Browse BNB Chain ERC-8004 identities with evidence from 8004scan and clearly labelled first party registrations." };
@@ -14,14 +15,16 @@ export default async function LiveAgentsPage({ searchParams }: { searchParams: P
   const requestedPage = Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage : 1;
   const [result, firstPartyAgents] = await Promise.all([listLiveAgents(requestedPage), resolveRangePilotLiveAgents()]);
   const restoredCount = firstPartyAgents.filter((agent) => agent.source === "8004scan").length;
+  const externalAgents = result.status === "ok" ? selectExternalMarketplaceAgents(result.agents) : [];
   let content: React.ReactNode;
   if (result.status === "not-configured") content = <LiveState title="Live data is not configured" copy="The server is missing SCAN8004_API_KEY. Demo strategies remain available and clearly labelled." />;
   else if (result.status === "unavailable") content = <LiveState title="8004scan is temporarily unavailable" copy="The request timed out or the API returned an error. No demo records are shown in its place." />;
   else if (result.status === "malformed") content = <LiveState title="8004scan returned an unexpected response" copy="BLOCview declined to display records that could not be safely validated." />;
   else if (result.agents.length === 0) content = <LiveState title="No live BNB agents returned" copy="8004scan returned an empty BNB Chain page. No demo records are substituted." />;
+  else if (externalAgents.length === 0) content = <LiveState title="No classified agents on this page" copy="No returned record mapped clearly to a supported marketplace category. No category was guessed and no demo records are substituted." />;
   else content = <>
-    <div className="live-result-meta"><span>{result.total === undefined ? `${result.agents.length} returned` : `${result.total.toLocaleString()} total`} · Page {result.page}</span><span>Retrieved at: {new Date(result.retrievedAt).toLocaleString()} · {result.retrievalTimestampBasis === "source-provided" ? "source timestamp" : "local fallback"}</span></div>
-    <LiveAgentList agents={result.agents.filter((agent) => !firstPartyAgents.some((firstParty) => firstParty.chainId === agent.chainId && firstParty.tokenId === agent.tokenId))} />
+    <div className="live-result-meta"><span>{externalAgents.length} classified on this page · Page {result.page}</span><span>Retrieved at: {new Date(result.retrievedAt).toLocaleString()} · {result.retrievalTimestampBasis === "source-provided" ? "source timestamp" : "local fallback"}</span></div>
+    <LiveAgentList agents={externalAgents} />
     <nav className="pagination" aria-label="Live agent pages">{result.page > 1 && <Link className="secondary-button" href={`/live-agents?page=${result.page - 1}`}>Previous</Link>}{result.hasMore && <Link className="primary-button" href={`/live-agents?page=${result.page + 1}`}>Next page</Link>}</nav>
   </>;
   return <main><Header /><div className="live-shell">
