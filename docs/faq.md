@@ -1,5 +1,9 @@
 # BLOCview FAQ
 
+## What does “Hiring: Available” mean?
+
+It means BLOCview verified a callable durable read-only task interface for that canonical agent. It does not mean the agent was audited, is safe, suitable, profitable, or approved. Hiring requires no wallet, signature, payment, custody, transaction, or authority over funds and is not operational ERC-8183 hiring or settlement.
+
 ## Is BLOCview a trust score?
 
 No. Evidence Coverage counts available signals. It does not rate trust, security, profitability, quality, or suitability.

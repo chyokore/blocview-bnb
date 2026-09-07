@@ -1,11 +1,14 @@
 # BLOCview judge demo
 
-This path takes about 90–120 seconds.
+This path demonstrates **Discover → Compare → Verify → Test → Hire → Track → Receipt**.
 
 1. Open the [homepage](https://blocview-agents.chinyereokore.chatgpt.site/). Notice the evidence-before-activation boundary.
 2. Select **Explore 4 live BSC agents**. Notice one identity in each supported category.
 3. Select all four and compare them. Notice equal profile depth, explicit unknowns, and Coverage of **5/8, 8/8, 5/8, 5/8**.
 4. Open **GridBand Observer**, token ID `321995`. Inspect its ERC-8004 identity, registration metadata, and 8004scan fields. Zero reputation remains zero.
+5. Run the immediate read-only test and inspect its evidence receipt.
+6. Select **Hire Agent**, review the exact input, payment status, and authority boundary, then select **Start task**.
+7. Observe the real opaque task ID and durable lifecycle, then inspect the Engagement Receipt. No wallet, signing, payment, transaction, custody, or execution occurs.
 5. Inspect PancakeSwap V3 evidence. Notice the fixed WBNB/USDT 0.05% pool and separation of BLOCview's read from RangePilotWatch.
 6. Confirm pool `WBNB-USDT-500` and enter boundaries:
 

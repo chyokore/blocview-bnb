@@ -2,6 +2,8 @@
 
 ## Main journey
 
+Canonical verified agents extend the journey through **Verify → Test → Hire → Track → Engagement Receipt**. Test is immediate and non-persistent; Hire creates a durable one-time read-only off-chain task after explicit review and confirmation.
+
 ```mermaid
 flowchart LR
  L[Land] --> D[Discover by category]

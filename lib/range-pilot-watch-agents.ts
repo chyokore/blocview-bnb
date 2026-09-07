@@ -13,6 +13,7 @@ export type RangePilotLiveAgent = LiveAgent & {
   healthUrl: string;
   assessmentUrl: string;
   assessmentMode: "external-read-only-handoff";
+  hiring: "available";
   indexingStatus?: "indexing pending";
 };
 
@@ -36,6 +37,7 @@ function record(tokenId: number, name: string, category: RangePilotCategory, slu
     healthUrl: `${origin}/agents/${slug}/health`,
     assessmentUrl: `${origin}/agents/${slug}/assess`,
     assessmentMode: "external-read-only-handoff",
+    hiring: "available",
     indexingStatus: "indexing pending",
     retrievedAt,
     retrievalTimestampBasis: "local-fallback",

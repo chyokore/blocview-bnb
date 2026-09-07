@@ -8,6 +8,8 @@ Knowing what that agent can actually prove is harder.
 
 BLOCview helps you discover and compare agents on BNB Chain, inspect the evidence behind them, understand what is still unknown, and test supported agents without handing over control of your wallet or funds.
 
+The four canonical RangePilotWatch agents also support verified hiring: **Discover → Compare → Verify → Test → Hire → Track → Engagement Receipt**. Hiring starts a durable one-time read-only off-chain task. It requires no wallet, signing, payment, custody, or execution authority. “Verified” describes the callable interface and lifecycle, not an audit, recommendation, or performance claim.
+
 Instead of giving every agent a made-up trust score, BLOCview shows the evidence that is available and lets you decide. BLOCview is the evidence checkpoint before activation.
 
 [Live app](https://blocview-agents.chinyereokore.chatgpt.site/) · [Live agents](https://blocview-agents.chinyereokore.chatgpt.site/live-agents) · [Compare agents](https://blocview-agents.chinyereokore.chatgpt.site/compare) · [Source](https://github.com/chyokore/blocview-bnb)

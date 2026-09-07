@@ -14,6 +14,7 @@ import {
 import { composeFlagshipProof, resolveRangePilotWatchRegistryMapping } from "../lib/flagship-proof.ts";
 import { listRangePilotLiveAgents, mergeRangePilotIndexedAgent, RANGE_PILOT_REGISTRY } from "../lib/range-pilot-watch-agents.ts";
 import { ASSESSMENT_ENDPOINTS, validateAssessmentRequest } from "../lib/range-pilot-assessments.ts";
+import { RANGE_PILOT_TASK_ORIGIN, TASK_SLUGS, sanitizeTask, taskError, validateHireRequest } from "../lib/range-pilot-hiring.ts";
 import { composeGridBandReceipt, crossCheckGridBand, placeTick } from "../lib/gridband-evidence.ts";
 import { decodeSignedInt24Word, decodeSlot0, PANCAKESWAP_V3_POOL_ALLOWLIST, readPancakeSwapV3PoolEvidence } from "../lib/pancakeswap-v3.ts";
 
@@ -407,7 +408,7 @@ test("final activation polish preserves evidence counts, explicit unknowns, and 
   const comparison = await (await render("/compare?agents=321941,321995,322046,322090")).text();
   assert.match(comparison, /Historical performance: Not established/i);
   assert.match(comparison, /Execution permissions: Not applicable to the BLOCview read only assessment/i);
-  assert.doesNotMatch(comparison, /className=.*trust-score|security score|profitability score|Hire agent|Trade now|Connect wallet|Sign transaction|Pay now/i);
+  assert.doesNotMatch(comparison, /className=.*trust-score|Trade now|Connect wallet|Sign transaction|Pay now/i);
 });
 
 test("uses exact per-agent health and assessment endpoints", () => {
@@ -701,4 +702,35 @@ test("GridBand evidence never falls back to demo data", async () => {
   assert.doesNotMatch(`${route}\n${model}`, /from ["']@\/data\/agents|Range Pilot|Grid Sentinel|demo fallback/i);
   assert.match(route, /verification-failed/);
   assert.match(route, /evidence-unavailable/);
+});
+
+test("verified hiring stays canonical, fixed-origin, bounded, and server-only", async () => {
+  assert.equal(RANGE_PILOT_TASK_ORIGIN, "https://range-pilot-watch.onrender.com");
+  assert.deepEqual(Object.keys(TASK_SLUGS).map(Number), [321941, 321995, 322046, 322090]);
+  assert.deepEqual(validateHireRequest(321941, { input: { tokenId: "42" }, idempotencyKey: "secure-key-1234" }), { operation: "read-only-assessment", input: { tokenId: "42" }, idempotencyKey: "secure-key-1234" });
+  assert.equal(validateHireRequest(99, { input: {}, idempotencyKey: "secure-key-1234" }), null);
+  assert.equal(validateHireRequest(321941, { input: { tokenId: "42", url: "https://evil.invalid" }, idempotencyKey: "secure-key-1234" }), null);
+  assert.deepEqual(taskError(409), { error: "This confirmation conflicts with an earlier task request. Review the input and start a new confirmation." });
+  assert.deepEqual(taskError(503), { error: "Task service is temporarily unavailable. No task was started." });
+  const safe = sanitizeTask({ taskId: "tsk_abcdefghijklmnopqrstuvwxyz123456", status: "completed", outcomeStatus: "refused", result: { status: "refused" }, secret: "never" });
+  assert.equal(safe.outcomeStatus, "refused"); assert.equal("secret" in safe, false);
+  const sources = await Promise.all([
+    readFile(new URL("../components/HireAgent.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/range-pilot-watch/agents/[tokenId]/tasks/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/range-pilot-watch/tasks/[taskId]/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../components/LiveAgentList.tsx", import.meta.url), "utf8"),
+  ]);
+  const [client, createRoute, retrieveRoute, list] = sources;
+  assert.match(client, /Hire Agent/); assert.match(client, /Start task/); assert.match(client, /Engagement Receipt/); assert.match(client, /crypto\.randomUUID/);
+  assert.match(createRoute, /process\.env\.BLOCVIEW_SERVICE_TOKEN/); assert.doesNotMatch(client, /BLOCVIEW_SERVICE_TOKEN|Authorization: `Bearer/);
+  assert.match(list, /No verified hiring interface/); assert.match(list, /Hiring/);
+  assert.doesNotMatch(`${client}\n${createRoute}\n${retrieveRoute}`, /walletConnect|sendTransaction|eth_send|privateKey|approve\(|swap\(|escrow enabled/i);
+});
+
+test("canonical profiles and comparison expose verified hiring separately from testing", async () => {
+  const [profile, comparison, listing] = await Promise.all([render("/live-agents/56/321995"), render("/compare?agents=321941,321995"), render("/live-agents")]);
+  const [p, c, l] = await Promise.all([profile.text(), comparison.text(), listing.text()]);
+  assert.match(p, /Run read only assessment/); assert.match(p, /Hire Agent/); assert.match(p, /Start a one-time read-only task/);
+  assert.match(c, /Hiring/); assert.match(c, /callable durable read-only task interface/);
+  assert.match(l, /Hiring/); assert.match(l, /Available/);
 });

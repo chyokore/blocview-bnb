@@ -2,6 +2,8 @@
 
 BLOCview separates first-party observation from external evidence and carries provenance into the result. Using a source does not mean treating it as trusted or complete.
 
+Hiring uses fixed BLOCview server routes that validate one of four canonical inputs, call the allowlisted RangePilotWatch origin with a server-only `BLOCVIEW_SERVICE_TOKEN`, sanitize responses, and expose only durable task creation and retrieval. The browser never receives the credential or chooses an upstream URL.
+
 ## System architecture
 
 ```mermaid
