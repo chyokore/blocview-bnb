@@ -722,6 +722,12 @@ test("verified hiring stays canonical, fixed-origin, bounded, and server-only", 
   ]);
   const [client, createRoute, retrieveRoute, list] = sources;
   assert.match(client, /Hire Agent/); assert.match(client, /Start task/); assert.match(client, /Engagement Receipt/); assert.match(client, /crypto\.randomUUID/);
+  assert.match(client, /<dt>Input<\/dt>/); assert.match(client, /task\.input/);
+  assert.match(client, /<dt>Created<\/dt>/); assert.match(client, /task\.createdAt/);
+  assert.match(client, /<dt>Started<\/dt>/); assert.match(client, /task\.startedAt/);
+  assert.match(client, /task\.status === "failed" \? "Failed" : "Completed"/); assert.match(client, /task\.completedAt/);
+  assert.match(client, /Not recorded/); assert.match(client, /task\.outcomeStatus \?\? "Pending"/);
+  assert.doesNotMatch(client, /BLOCVIEW_SERVICE_TOKEN|Authorization: `Bearer|failedAt/);
   assert.match(createRoute, /process\.env\.BLOCVIEW_SERVICE_TOKEN/); assert.doesNotMatch(client, /BLOCVIEW_SERVICE_TOKEN|Authorization: `Bearer/);
   assert.match(list, /No verified hiring interface/); assert.match(list, /Hiring/);
   assert.doesNotMatch(`${client}\n${createRoute}\n${retrieveRoute}`, /walletConnect|sendTransaction|eth_send|privateKey|approve\(|swap\(|escrow enabled/i);
