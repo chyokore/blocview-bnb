@@ -35,6 +35,7 @@ export type LiveAgent = {
   name?: string;
   description?: string;
   capabilities: string[];
+  interfaceType?: "Web" | "A2A" | "MCP";
   reputation?: { score?: number; stars?: number; feedbackCount?: number };
   registeredAt?: string;
   retrievedAt: string;

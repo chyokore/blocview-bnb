@@ -7,6 +7,7 @@ export type RangePilotLiveAgent = LiveAgent & {
   source: "range-pilot-watch" | "8004scan";
   registry: typeof RANGE_PILOT_REGISTRY;
   category: RangePilotCategory;
+  interfaceType: "Web";
   registrationUrl: string;
   documentationUrl: string;
   healthUrl: string;
@@ -26,6 +27,7 @@ function record(tokenId: number, name: string, category: RangePilotCategory, slu
     name,
     description,
     capabilities: [category],
+    interfaceType: "Web",
     registry: RANGE_PILOT_REGISTRY,
     registryAddress: RANGE_PILOT_REGISTRY.split(":")[2],
     category,
@@ -68,6 +70,7 @@ export function mergeRangePilotIndexedAgent(registration: RangePilotLiveAgent, i
     ...registration,
     ...indexed,
     category: registration.category,
+    interfaceType: "Web",
     registry: registration.registry,
     registryAddress: registration.registryAddress,
     registrationUrl: registration.registrationUrl,

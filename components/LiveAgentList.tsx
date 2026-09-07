@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { LiveAgent } from "@/lib/8004scan";
+import { LIVE_MARKETPLACE_INTERFACES, type MarketplaceInterface } from "@/lib/live-marketplace";
 import { ArrowIcon, SearchIcon, ShieldIcon } from "./icons";
 
 function text(value: string | undefined) {
@@ -15,22 +16,24 @@ function date(value: string | undefined) {
   return Number.isNaN(parsed.valueOf()) ? value : parsed.toLocaleString();
 }
 
-export function LiveAgentList({ agents, comparisonEnabled = false }: { agents: LiveAgent[]; comparisonEnabled?: boolean }) {
+export function LiveAgentList({ agents, comparisonEnabled = false, interfaceFilters = false }: { agents: LiveAgent[]; comparisonEnabled?: boolean; interfaceFilters?: boolean }) {
   const [query, setQuery] = useState("");
+  const [interfaceType, setInterfaceType] = useState<"All" | MarketplaceInterface>("All");
   const [selected, setSelected] = useState<string[]>([]);
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return agents;
-    return agents.filter((agent) => `${agent.name ?? ""} ${agent.agentId} ${agent.tokenId} ${agent.description ?? ""} ${agent.capabilities.join(" ")}`.toLowerCase().includes(needle));
-  }, [agents, query]);
+    return agents.filter((agent) => (!interfaceFilters || interfaceType === "All" || agent.interfaceType === interfaceType)
+      && (!needle || `${agent.name ?? ""} ${agent.agentId} ${agent.tokenId} ${agent.description ?? ""} ${agent.interfaceType ?? ""} ${agent.category ?? ""}`.toLowerCase().includes(needle)));
+  }, [agents, interfaceFilters, interfaceType, query]);
 
   return <>
     <div className="live-search search-box"><SearchIcon /><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Search returned live agents" placeholder="Search this page by name, identity, or capability…" /></div>
+    {interfaceFilters && <div className="filters live-interface-filters" role="group" aria-label="Filter by interface">{(["All", ...LIVE_MARKETPLACE_INTERFACES] as const).map((item) => <button key={item} className={interfaceType === item ? "active" : ""} onClick={() => setInterfaceType(item)}>{item}</button>)}</div>}
     <p className="search-caveat"><ShieldIcon /> Search matches returned metadata only; it is not evidence of quality, safety, or suitability.</p>
     {filtered.length ? <div className="agent-grid live-grid">{filtered.map((agent) => { const key = `${agent.chainId}:${agent.tokenId}`; const checked = selected.includes(key); return <article className={`agent-card live-card ${checked ? "selected-for-compare" : ""}`} key={key}>
       <div className="card-topline"><div className="agent-identity"><span className="agent-avatar live-avatar">{(agent.name?.slice(0, 2) || "#").toUpperCase()}</span><div><h3>{text(agent.name)}</h3><span>ERC-8004 #{agent.tokenId}</span></div></div><span className={`source-badge ${agent.source === "8004scan" ? "verified" : "pending"}`}>{agent.source === "8004scan" ? "8004scan registry record" : "8004scan: indexing pending"}</span></div>
       <p className="card-description">{text(agent.description)}</p>
-      <div className="tag-row"><span>{agent.category ?? "Unclassified live agent"}</span>{agent.capabilities.map((capability) => <span key={capability}>{capability}</span>)}</div>
+      <dl className="live-classification"><div><dt>Interface</dt><dd>{agent.interfaceType ?? "Not returned"}</dd></div>{agent.category && <div><dt>Strategy</dt><dd>{agent.category}</dd></div>}</dl>
       <dl className="live-facts"><div><dt>Identity</dt><dd>{agent.agentId}</dd></div><div><dt>Network</dt><dd>{agent.network} ({agent.chainId})</dd></div><div><dt>Reputation</dt><dd>{agent.reputation?.score ?? "Not returned"}</dd></div><div><dt>Feedback</dt><dd>{agent.reputation?.feedbackCount ?? "Not returned"}</dd></div><div><dt>Registered</dt><dd>{date(agent.registeredAt)}</dd></div><div><dt>Retrieved</dt><dd>{date(agent.retrievedAt)} · {agent.retrievalTimestampBasis === "source-provided" ? "source timestamp" : "local fallback"}</dd></div></dl>
       {comparisonEnabled && <label className="live-compare-select"><input type="checkbox" checked={checked} disabled={!checked && selected.length >= 4} onChange={() => setSelected((current) => checked ? current.filter((item) => item !== key) : [...current, key])} /><span>{checked ? "Selected for live comparison" : "Select for live comparison"}</span></label>}
       <Link href={`/live-agents/${agent.chainId}/${agent.tokenId}`} className="card-link">View sourced profile <ArrowIcon /></Link>
