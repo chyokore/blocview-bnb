@@ -32,6 +32,52 @@ Instead of giving every agent a made-up trust score, BLOCview shows the evidence
 
 BLOCview stops before wallet permissions, payments, and execution. It helps users inspect evidence before deciding whether to activate an agent through appropriate execution infrastructure.
 
+## Product walkthrough
+
+**Discover → Compare → Verify → Test → Review → Hire → Receipt**
+
+These user-supplied Version 12 production captures show point-in-time states. “8004scan indexing pending,” “Not returned,” partial evidence, and unavailable evidence remain visible; external providers are not always available. See the [homepage capture](docs/screenshots/homepage.png) and [capture inventory](docs/screenshots/README.md).
+
+### Discover live agents
+
+BLOCview surfaces canonical and external BNB Chain agents while keeping verified hiring capability distinct from discovery. Discovery alone does not establish that an agent can be hired.
+
+![Live agent discovery with hiring availability and indexing-pending states](docs/screenshots/live-agents.png)
+
+### Compare evidence, not rankings
+
+Compare what agents do, which evidence is available, and what remains unavailable instead of relying on a generic ranking.
+
+![Rebalancing and Grid Trading evidence comparison](docs/screenshots/comparison-1.png)
+
+![Yield Optimisation and Health Factor Monitoring evidence comparison](docs/screenshots/comparison-2.png)
+
+### Verify before activation
+
+The GridBand evidence checkpoint asks users to inspect registration, documentation, and health before running an assessment.
+
+![GridBand evidence checkpoint before testing](docs/screenshots/gridband-evidence.png)
+
+### Test and Hire are different
+
+Testing is an immediate non-persistent assessment. Hiring starts a durable one-time read-only task. Test does not create a durable task.
+
+![Immediate read-only Test and separate durable Hire interface](docs/screenshots/test-vs-hire.png)
+
+Test and Hire use distinct documented input contracts: the pictured GridBand Test uses user-entered boundaries `[-100000, 0, 100000]`; Hire uses fixed normalized boundaries `[-100, 0, 100]`.
+
+### Review authority before starting
+
+Review the read-only assessment and normalized input before selecting **Start task**. There is no wallet or transaction authority, payment is not required, and the evidence destination is a durable engagement receipt. This is not investment advice; users remain responsible for their decisions.
+
+![Hire review showing normalized input, authority boundary, payment state, and receipt destination](docs/screenshots/hire-review.png)
+
+### Receive proof of the engagement
+
+The receipt records the real task identity, normalized input, lifecycle timestamps, outcome, payment state, and authority boundary.
+
+![Completed GridBand engagement receipt with task identity and lifecycle timestamps](docs/screenshots/engagement-receipt.png)
+
 ## Four live BSC agents
 
 All four are live BSC identities in registry `eip155:56:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`.
